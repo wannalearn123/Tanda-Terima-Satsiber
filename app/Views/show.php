@@ -14,8 +14,8 @@
     <div><dt>Terakhir diubah</dt><dd><?= e($row['updated_at']) ?></dd></div>
   </dl>
   <div class="actions">
-    <a class="btn primary" href="/pengiriman/<?= (int) $row['id'] ?>/pdf" target="_blank" rel="noopener">Cetak PDF</a>
-    <a class="btn" href="/pengiriman/<?= (int) $row['id'] ?>/edit">Edit</a>
+    <button class="btn primary" onclick="window.open('/pengiriman/<?= (int) $row['id'] ?>/pdf', '_blank')">Cetak PDF</button>
+    <button class="btn" onclick="window.location.href='/pengiriman/<?= (int) $row['id'] ?>/edit'">Edit</button>
     <?php if (!empty($appAdmin)): ?>
       <form class="inline" method="post" action="/pengiriman/<?= (int) $row['id'] ?>/delete"
             onsubmit="return confirm('Hapus data ini? File tanda tangan ikut terhapus.')">
@@ -23,6 +23,6 @@
         <button class="btn danger" type="submit">Hapus</button>
       </form>
     <?php endif; ?>
-    <a class="btn ghost" href="/dashboard">Kembali</a>
+    <button class="btn ghost" onclick="window.location.href='/dashboard'">Kembali</button>
   </div>
 </section>

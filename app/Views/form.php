@@ -92,7 +92,7 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
       <?php if (!$isEdit): ?>
         <button type="reset" class="btn ghost" id="btnReset">Reset</button>
       <?php else: ?>
-        <a class="btn ghost" href="/pengiriman/<?= (int) $editId ?>">Batal</a>
+        <button type="button" class="btn ghost" onclick="window.location.href='/pengiriman/<?= (int) $editId ?>'">Batal</button>
       <?php endif; ?>
     </div>
   </form>
