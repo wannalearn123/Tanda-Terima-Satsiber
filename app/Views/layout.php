@@ -28,7 +28,7 @@
     </nav>
   </div>
 </header>
-<main class="wrap">
+<main class="wrap<?= ($active ?? '') === 'login' ? ' login-page' : '' ?>">
   <?php if ($err = flash('error')): ?><div class="alert err"><?= e($err) ?></div><?php endif; ?>
   <?php if ($ok = flash('success')): ?><div class="alert ok"><?= e($ok) ?></div><?php endif; ?>
   <?= $content ?? '' ?>
