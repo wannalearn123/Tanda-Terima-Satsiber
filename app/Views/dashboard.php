@@ -67,7 +67,7 @@ $qstr = fn(int $p): string => http_build_query(array_filter(
         <form class="inline grow" method="post" action="/pengiriman/<?= (int) $r['id'] ?>/delete"
               onsubmit="return confirm('Hapus data #<?= (int) $r['id'] ?>?')">
           <?= csrf_field() ?>
-          <button class="btn sm danger" type="submit">Hapus</button>
+          <button class="btn sm danger" style="width:100%" type="submit">Hapus</button>
         </form>
       <?php endif; ?>
     </div>
