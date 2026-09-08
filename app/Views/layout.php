@@ -24,8 +24,6 @@
           <?= csrf_field() ?>
           <button class="navlink" type="submit">Keluar (<?= e($appUser['username'] ?? '') ?>)</button>
         </form>
-      <?php else: ?>
-        <a href="/login" class="<?= (($active ?? '') === 'login') ? 'on' : '' ?>">Masuk</a>
       <?php endif; ?>
     </nav>
   </div>
