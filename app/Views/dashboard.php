@@ -32,7 +32,7 @@ $qstr = fn(int $p): string => http_build_query(array_filter(
           <td><?= e($r['tanggal']) ?> <?= e(substr((string) $r['pukul'], 0, 5)) ?></td>
           <td><?= e($r['nomor_referensi']) ?></td>
           <td><?= e($r['nama_penerima']) ?><?= $r['pangkat_golongan'] !== '' ? '<br><small>' . e($r['pangkat_golongan']) . '</small>' : '' ?></td>
-          <td><?= e($r['pusat_nama'] ?? '-') ?></td>
+          <td><?= e($r['preset_nama'] ?? '-') ?></td>
           <td class="actions-cell">
             <a class="btn sm" href="/pengiriman/<?= (int) $r['id'] ?>">Lihat</a>
             <a class="btn sm" href="/pengiriman/<?= (int) $r['id'] ?>/edit">Edit</a>
@@ -58,7 +58,7 @@ $qstr = fn(int $p): string => http_build_query(array_filter(
     <div class="mrow"><span>Tanggal</span><b><?= e($r['tanggal']) ?> <?= e(substr((string) $r['pukul'], 0, 5)) ?></b></div>
     <div class="mrow"><span>No. Ref</span><b><?= e($r['nomor_referensi']) ?></b></div>
     <div class="mrow"><span>Penerima</span><b><?= e($r['nama_penerima']) ?></b></div>
-    <div class="mrow"><span>Pusat</span><b><?= e($r['pusat_nama'] ?? '-') ?></b></div>
+    <div class="mrow"><span>Pusat</span><b><?= e($r['preset_nama'] ?? '-') ?></b></div>
     <div class="mact">
       <a class="btn sm" href="/pengiriman/<?= (int) $r['id'] ?>">Lihat</a>
       <a class="btn sm" href="/pengiriman/<?= (int) $r['id'] ?>/edit">Edit</a>

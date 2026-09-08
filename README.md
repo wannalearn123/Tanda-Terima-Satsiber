@@ -1,6 +1,6 @@
 # Tanda Terima Pengiriman — TNI Satuan Siber
 
-PHP native + SQLite (PDO, WAL) + vanilla HTML/CSS/JS + Dompdf. Single server, single IP, single port. Tanpa login (single user).
+PHP native + SQLite (PDO, WAL) + vanilla HTML/CSS/JS + Dompdf. Single server, single IP, single port.
 
 ## Syarat
 
@@ -17,7 +17,7 @@ php setup.php
 php -S 0.0.0.0:8090 public/router.php
 ```
 
-## Login
+## Login & Role
 
 Semua halaman kecuali `/login` wajib login. Jalankan `php setup.php`
 (aman diulang, idempotent) untuk membuat tabel `users` + akun awal:
@@ -35,6 +35,21 @@ Role:
 
 Hapus data (`Hapus` di dashboard/detail, admin saja) menghapus baris database
 dan file tanda tangannya sekaligus. Tanpa bulk delete.
+
+## Form & Preset Penerima
+
+Form (`/`) menerima input: **Preset Penerima** (wajib pilih dari daftar preset),
+Nomor Referensi, Nama Penerima, Pangkat/Golongan, Jabatan, Tanggal, Pukul,
+Telp/HP, dan Tanda Tangan (wajib, gambar di canvas).
+
+Daftar preset diinisialisasi saat `php setup.php`:
+
+- Kapus Siber TNI (`KAPUSSIBER`)
+- Satsiber TNI (`SATSIBER`)
+- Kogabwilhan TNI (`KOGABWILHAN`)
+
+Setelah simpan, user dialihkan ke halaman **detail** data. Tombol **Cetak PDF**
+tersedia di detail dan dashboard — PDF bersifat opsional (tidak otomatis dibuka).
 
 ## PDF
 
@@ -83,7 +98,9 @@ server {
 
 ## Alur
 
-Form (`/`) → validasi server-side → INSERT SQLite (transaksi pendek, lalu commit) → redirect ke `/pengiriman/{id}/pdf` (generate di luar transaksi). Bila PDF gagal, data tetap aman dan bisa dibuat ulang dari dashboard (Lihat / Edit / PDF).
+Form (`/`) → validasi server-side (termasuk wajib pilih preset + tanda tangan)
+→ INSERT SQLite (transaksi pendek, lalu commit) → redirect ke halaman detail
+(`/pengiriman/{id}`). PDF dihasilkan on-demand dari dashboard atau detail.
 
 Dashboard (`/dashboard`): filter Dari/Sampai + cari No.Ref/Nama, pagination 20/halaman (`PER_PAGE` di `.env`).
 

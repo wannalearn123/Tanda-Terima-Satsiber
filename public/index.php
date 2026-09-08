@@ -265,9 +265,9 @@ if (preg_match('#^/pengiriman/(\d+)/edit$#', $path, $m) && $method === 'GET') {
         exit;
     }
     render('form', [
-        'pusat' => $d['pusat'],
+        'preset' => $d['preset'],
         'old' => [
-            'pusat_penerima_id' => $d['row']['pusat_penerima_id'],
+            'preset_penerima_id' => $d['row']['preset_penerima_id'],
             'nomor_referensi' => $d['row']['nomor_referensi'],
             'nama_penerima' => $d['row']['nama_penerima'],
             'pangkat_golongan' => $d['row']['pangkat_golongan'],
@@ -298,7 +298,7 @@ if (preg_match('#^/pengiriman/(\d+)/update$#', $path, $m) && $method === 'POST')
     }
     $d = PengirimanController::edit($pdo, $id);
     render('form', [
-        'pusat' => $d['pusat'],
+        'preset' => $d['preset'],
         'old' => $res['old'],
         'errors' => $res['errors'],
         'isEdit' => true,

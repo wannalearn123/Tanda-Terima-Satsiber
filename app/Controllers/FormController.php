@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Database\Connection;
-use App\Models\PusatPenerima;
+use App\Models\PresetPenerima;
 use App\Models\Pengiriman;
 use App\Services\TandaTangan;
 use App\Services\Validator;
@@ -13,10 +13,10 @@ use PDO;
 
 final class FormController
 {
-    /** @return array{pusat: array, old: array, errors: array} */
+    /** @return array{preset: array, old: array, errors: array} */
     public static function show(PDO $pdo, array $old = [], array $errors = []): array
     {
-        return ['pusat' => PusatPenerima::allActive($pdo), 'old' => $old, 'errors' => $errors];
+        return ['preset' => PresetPenerima::allActive($pdo), 'old' => $old, 'errors' => $errors];
     }
 
     /** @return array{id: int}|array{errors: array, old: array} */

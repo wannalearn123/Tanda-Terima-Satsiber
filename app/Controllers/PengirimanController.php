@@ -16,14 +16,14 @@ final class PengirimanController
         return Pengiriman::find($pdo, $id);
     }
 
-    /** @return array{row: array, pusat: array}|null */
+    /** @return array{row: array, bpreset: array}|null */
     public static function edit(PDO $pdo, int $id): ?array
     {
         $row = Pengiriman::find($pdo, $id);
         if ($row === null) {
             return null;
         }
-        return ['row' => $row, 'pusat' => PusatPenerima::allActive($pdo)];
+        return ['row' => $row, 'bpreset' => PusatPenerima::allActive($pdo)];
     }
 
     /** Stream PDF ke browser. Melempar RuntimeException bila gagal (data DB tetap aman). */

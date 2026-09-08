@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\PusatPenerima;
+use App\Models\PresetPenerima;
 use PDO;
 
 final class Validator
@@ -28,18 +28,18 @@ final class Validator
         $ttd = (string) ($input['tanda_tangan'] ?? '');
         $ttdBin = null;
 
-        $pusatRaw = $s('pusat_penerima_id');
-        $pusat = null;
-        if ($pusatRaw !== '') {
-            if (!ctype_digit($pusatRaw)) {
-                $errors['pusat_penerima_id'] = 'Pusat penerima tidak valid.';
+        $presetRaw = $s('preset_penerima_id');
+        $preset = null;
+        if ($presetRaw === '') {
+            $errors['preset_penerima_id'] = 'Preset penerima wajib dipilih.';
+        } elseif (!ctype_digit($presetRaw)) {
+            $errors['preset_penerima_id'] = 'Preset penerima tidak valid.';
+        } else {
+            $found = PresetPenerima::find($pdo, (int) $presetRaw);
+            if ($found === null || (int) $found['aktif'] !== 1) {
+                $errors['preset_penerima_id'] = 'Preset penerima tidak dikenal.';
             } else {
-                $found = PusatPenerima::find($pdo, (int) $pusatRaw);
-                if ($found === null || (int) $found['aktif'] !== 1) {
-                    $errors['pusat_penerima_id'] = 'Pusat penerima tidak dikenal.';
-                } else {
-                    $pusat = (int) $pusatRaw;
-                }
+                $preset = (int) $presetRaw;
             }
         }
 
@@ -94,7 +94,7 @@ final class Validator
 
         $clean = [
             'nomor_referensi' => $nomor,
-            'pusat_penerima_id' => $pusat,
+            'preset_penerima_id' => $preset,
             'nama_penerima' => $nama,
             'pangkat_golongan' => $pangkat,
             'jabatan' => $jabatan,

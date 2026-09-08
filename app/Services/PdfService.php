@@ -12,7 +12,7 @@ final class PdfService
     public static function buildHtml(array $row): string
     {
         $h = fn(mixed $v): string => htmlspecialchars((string) ($v ?? '-'), ENT_QUOTES, 'UTF-8');
-        $pusat = $row['pusat_nama'] ?? '-';
+        $preset = $row['preset_nama'] ?? '-';
         $tanggal = $h($row['tanggal'] ?? '-') . ' — Pukul ' . $h($row['pukul'] ?? '-');
         $ttdPath = (string) ($row['tanda_tangan_path'] ?? '');
         $ttdImg = TandaTangan::dataUri($row['tanda_tangan_path'] ?? null);
@@ -38,7 +38,7 @@ final class PdfService
             . '<div class="kop"><h1>TENTARA NASIONAL INDONESIA</h1><h2>SATUAN SIBER</h2><p>TANDA TERIMA PENGIRIMAN</p></div>'
             . '<table>'
             . '<tr><th>Nomor Referensi</th><td>' . $h($row['nomor_referensi']) . '</td></tr>'
-            . '<tr><th>Pusat Penerima</th><td>' . $h($pusat) . '</td></tr>'
+            . '<tr><th>Preset Penerima</th><td>' . $h($preset) . '</td></tr>'
             . '<tr><th>Nama Penerima</th><td>' . $h($row['nama_penerima']) . '</td></tr>'
             . '<tr><th>Pangkat / Golongan</th><td>' . $h($row['pangkat_golongan']) . '</td></tr>'
             . '<tr><th>Jabatan</th><td>' . $h($row['jabatan']) . '</td></tr>'

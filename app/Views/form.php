@@ -1,5 +1,5 @@
 <?php
-// Variabel: $pusat (list), $old, $errors, $isEdit, $editId
+// Variabel: $preset (list), $old, $errors, $isEdit, $editId
 $isEdit = $isEdit ?? false;
 $old = $old ?? [];
 $errors = $errors ?? [];
@@ -15,16 +15,16 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
 
     <div class="grid2">
       <div class="field">
-        <label for="pusat">Pusat Penerima</label>
-        <select id="pusat" name="pusat_penerima_id">
-          <option value="">Pilih Pusat Penerima (Opsional)</option>
-          <?php foreach ($pusat as $p): ?>
-            <option value="<?= (int) $p['id'] ?>" <?= ((string) ($old['pusat_penerima_id'] ?? '') === (string) $p['id']) ? 'selected' : '' ?>>
+        <label for="preset">Preset Penerima *</label>
+        <select id="preset" name="preset_penerima_id" required>
+          <option value="">-- Pilih Preset Penerima --</option>
+          <?php foreach ($preset as $p): ?>
+            <option value="<?= (int) $p['id'] ?>" <?= ((string) ($old['preset_penerima_id'] ?? '') === (string) $p['id']) ? 'selected' : '' ?>>
               <?= e($p['nama']) ?>
             </option>
           <?php endforeach; ?>
         </select>
-        <?= $ferr('pusat_penerima_id') ?>
+        <?= $ferr('preset_penerima_id') ?>
       </div>
 
       <div class="field">

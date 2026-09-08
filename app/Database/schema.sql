@@ -5,7 +5,7 @@ PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
 PRAGMA busy_timeout = 5000;
 
-CREATE TABLE IF NOT EXISTS pusat_penerima (
+CREATE TABLE IF NOT EXISTS preset_penerima (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nama TEXT NOT NULL,
     kode TEXT NOT NULL UNIQUE,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS pusat_penerima (
 CREATE TABLE IF NOT EXISTS pengiriman (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nomor_referensi TEXT NOT NULL,
-    pusat_penerima_id INTEGER NULL REFERENCES pusat_penerima(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    preset_penerima_id INTEGER NULL REFERENCES preset_penerima(id) ON UPDATE CASCADE ON DELETE SET NULL,
     nama_penerima TEXT NOT NULL,
     pangkat_golongan TEXT NOT NULL DEFAULT '',
     jabatan TEXT NOT NULL DEFAULT '',
@@ -33,4 +33,4 @@ CREATE TABLE IF NOT EXISTS pengiriman (
 CREATE INDEX IF NOT EXISTS idx_pengiriman_tanggal ON pengiriman(tanggal);
 CREATE INDEX IF NOT EXISTS idx_pengiriman_nomor ON pengiriman(nomor_referensi);
 CREATE INDEX IF NOT EXISTS idx_pengiriman_nama ON pengiriman(nama_penerima);
-CREATE INDEX IF NOT EXISTS idx_pengiriman_pusat ON pengiriman(pusat_penerima_id);
+CREATE INDEX IF NOT EXISTS idx_pengiriman_pusat ON pengiriman(preset_penerima_id);
