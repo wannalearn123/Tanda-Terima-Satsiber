@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Models\Pengiriman;
-use App\Models\PusatPenerima;
+use App\Models\PresetPenerima;
 use App\Services\PdfService;
 use PDO;
 
@@ -16,14 +16,14 @@ final class PengirimanController
         return Pengiriman::find($pdo, $id);
     }
 
-    /** @return array{row: array, bpreset: array}|null */
+    /** @return array{row: array, preset: array}|null */
     public static function edit(PDO $pdo, int $id): ?array
     {
         $row = Pengiriman::find($pdo, $id);
         if ($row === null) {
             return null;
         }
-        return ['row' => $row, 'bpreset' => PusatPenerima::allActive($pdo)];
+        return ['row' => $row, 'preset' => PresetPenerima::allActive($pdo)];
     }
 
     /** Stream PDF ke browser. Melempar RuntimeException bila gagal (data DB tetap aman). */

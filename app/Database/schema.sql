@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS preset_penerima (
 CREATE TABLE IF NOT EXISTS pengiriman (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nomor_referensi TEXT NOT NULL,
-    preset_penerima_id INTEGER NULL REFERENCES preset_penerima(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    preset_penerima_id INTEGER NOT NULL REFERENCES preset_penerima(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     nama_penerima TEXT NOT NULL,
     pangkat_golongan TEXT NOT NULL DEFAULT '',
     jabatan TEXT NOT NULL DEFAULT '',
