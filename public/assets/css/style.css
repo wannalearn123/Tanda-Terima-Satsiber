@@ -58,6 +58,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .detail dt{color:var(--muted)} .detail dd{margin:0}
 .sigview{max-width:320px;width:100%;background:#fff;border:1px solid var(--line);border-radius:6px}
 .card.narrow{max-width:400px;width:100%}
+.card.narrow .title{margin-bottom:2px}
+.card.narrow .muted{margin-top:0}
 .login-page{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 140px)}
 .pager{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:14px}
 .foot{text-align:center;color:var(--muted);padding:18px}
