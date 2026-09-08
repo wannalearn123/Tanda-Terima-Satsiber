@@ -1,0 +1,25 @@
+# Deployment opsional via Docker Compose — SATU service saja (PHP + SQLite, satu port).
+# Jalur utama tetap: php -S / Apache / Nginx (lihat README.md).
+# Cara pakai: docker compose up -d   →   buka http://localhost:8090
+
+name: tanda-terima
+
+services:
+  app:
+    build: .
+    image: tanda-terima-app
+    working_dir: /app
+    command: ["php", "-S", "0.0.0.0:8090", "public/router.php"]
+    ports:
+      - "0.0.0.0:8090:8090"
+    volumes:
+      - ./:/app
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_URL: ${APP_URL:-http://localhost:8090}
+      DB_PATH: ${DB_PATH:-database/database.sqlite}
+      PER_PAGE: ${PER_PAGE:-20}
+    restart: unless-stopped

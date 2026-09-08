@@ -1,0 +1,8 @@
+/vendor/
+/database/*.sqlite
+/database/*.sqlite-wal
+/database/*.sqlite-shm
+/storage/pdf/*.pdf
+/storage/tandatangan/*.png
+/storage/logs/*.log
+.env
