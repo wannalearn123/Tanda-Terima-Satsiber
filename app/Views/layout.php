@@ -22,7 +22,7 @@
         <?php endif; ?>
         <form class="inline" method="post" action="/logout" title="<?= e($appUser['username'] ?? '') ?>">
           <?= csrf_field() ?>
-          <button class="navlink" type="submit">Keluar (<?= e($appUser['username'] ?? '') ?>)</button>
+          <button class="navlink danger" type="submit">Keluar (<?= e($appUser['username'] ?? '') ?>)</button>
         </form>
       <?php endif; ?>
     </nav>
