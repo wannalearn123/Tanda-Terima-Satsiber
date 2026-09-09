@@ -1,0 +1,11 @@
+.git/
+.gitignore
+.env
+database/*.sqlite
+database/*.sqlite-wal
+database/*.sqlite-shm
+storage/tandatangan/*.png
+storage/logs/*.log
+storage/pdf/*.pdf
+storage/pdf/tmp/
+vendor/

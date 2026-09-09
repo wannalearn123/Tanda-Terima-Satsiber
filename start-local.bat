@@ -1,14 +1,16 @@
 @echo off
-REM start-local.bat — One-click local deployment (Windows)
-REM Usage: double-click start-local.bat atau jalankan di CMD
+REM start-local.bat — One-click native local deployment (Windows, location-independent)
+REM Runs wherever cloned (C:, D:, folder with spaces)
+
+REM Ensure script runs from repo root
+cd /d "%~dp0"
 
 echo [*] Starting Tanda-Terima-Satsiber (local one-click)...
 
-REM 1. Check/install PHP extensions
 echo [*] Memeriksa ekstensi PHP...
 call install-extensions.bat
 
-REM 2. Setup database jika belum ada
+REM 2. Setup DB if not exists
 if not exist database\database.sqlite (
     echo [*] Membuat database & seed (setup.php)...
     php setup.php
@@ -16,11 +18,11 @@ if not exist database\database.sqlite (
     echo [✓] SQLite database sudah ada, lewati setup
 )
 
-REM 3. Jalankan PHP server di background
+REM 3. Start PHP server in background (relative path)
 echo [*] Menjalankan PHP server di port 8090...
-start "" php -S 0.0.0.0:8090 public/router.php
+start "TandaTerimaServer" php -S 0.0.0.0:8090 public\router.php
 
-REM 4. Tampilkan hasil
+REM 4. Show result
 echo.
 echo ✅ Tanda-Terima-Satsiber berjalan secara lokal!
 echo    Local URL: http://localhost:8090

@@ -3,6 +3,7 @@
 /database/*.sqlite-wal
 /database/*.sqlite-shm
 /storage/pdf/*.pdf
+/storage/pdf/tmp/
 /storage/tandatangan/*.png
 /storage/logs/*.log
 .env

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Config\Config;
 use App\Models\Pengiriman;
 use PDO;
 
@@ -63,7 +64,21 @@ final class PdfService
         if (!class_exists(\Dompdf\Dompdf::class)) {
             throw new \RuntimeException('Dependensi PDF belum tersedia (folder vendor/ belum terinstal).');
         }
-        $dompdf = new \Dompdf\Dompdf(['isRemoteEnabled' => false]);
+        // Hardening Dompdf: tanpa remote/PHP/JS, filesystem dibatasi chroot
+        // project-root (masih mencakup font internal vendor/), temp terisolasi.
+        $options = new \Dompdf\Options([
+            'isRemoteEnabled' => false,
+            'isPhpEnabled' => false,
+            'isJavascriptEnabled' => false,
+        ]);
+        $options->setChroot([Config::root(), Config::root() . '/vendor/dompdf/dompdf']);
+        $tmp = Config::root() . '/storage/pdf/tmp';
+        if (!is_dir($tmp)) {
+            mkdir($tmp, 0755, true);
+        }
+        $options->setTempDir($tmp);
+        $options->setLogOutputFile('');
+        $dompdf = new \Dompdf\Dompdf($options);
         $dompdf->loadHtml(self::buildHtml($row), 'UTF-8');
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
