@@ -63,7 +63,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .detail>div{display:grid;grid-template-columns:200px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .detail dt{color:var(--muted)} .detail dd{margin:0}
 .sigview{max-width:320px;width:100%;background:#fff;border:1px solid var(--line);border-radius:6px}
-.login-page{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 140px)}
+.login-page{padding-top:40px}
 .pager{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:14px}
 .foot{text-align:center;color:var(--muted);padding:18px}
 @media(max-width:720px){
