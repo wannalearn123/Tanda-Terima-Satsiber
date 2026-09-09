@@ -35,20 +35,10 @@ $pdo->exec("PRAGMA busy_timeout = 5000;");
 $now = date('Y-m-d H:i:s');
 
 $pdo->exec(
-    "CREATE TABLE IF NOT EXISTS preset_penerima (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nama TEXT NOT NULL,
-        kode TEXT NOT NULL UNIQUE,
-        aktif INTEGER NOT NULL DEFAULT 1,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-    )"
-);
-$pdo->exec(
     "CREATE TABLE IF NOT EXISTS pengiriman (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nomor_referensi TEXT NOT NULL,
-        preset_penerima_id INTEGER NOT NULL REFERENCES preset_penerima(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+        nama_satuan_kerja TEXT NOT NULL,
         nama_penerima TEXT NOT NULL,
         pangkat_golongan TEXT NOT NULL DEFAULT '',
         jabatan TEXT NOT NULL DEFAULT '',
@@ -61,16 +51,16 @@ $pdo->exec(
         updated_at TEXT NOT NULL
     )"
 );
+
 foreach ([
     "CREATE INDEX IF NOT EXISTS idx_pengiriman_tanggal ON pengiriman(tanggal)",
     "CREATE INDEX IF NOT EXISTS idx_pengiriman_nomor ON pengiriman(nomor_referensi)",
     "CREATE INDEX IF NOT EXISTS idx_pengiriman_nama ON pengiriman(nama_penerima)",
-    "CREATE INDEX IF NOT EXISTS idx_pengiriman_preset ON pengiriman(preset_penerima_id)",
 ] as $sql) {
     $pdo->exec($sql);
 }
 
-// --- Autentikasi (tambah belakangan; idempotent untuk DB lama) ---
+// --- Autentikasi ---
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,43 +83,6 @@ if ($count === 0) {
     echo "Seed user: admin / admin123 (SEGERA ganti password via menu Pengguna)\n";
 }
 
-$seed = [
-    ['Kapus Siber TNI', 'KAPUSSIBER'],
-    ['Satsiber TNI', 'SATSIBER'],
-    ['Kogabwilhan TNI', 'KOGABWILHAN'],
-];
-$st = $pdo->prepare("INSERT OR IGNORE INTO preset_penerima (nama, kode, aktif, created_at, updated_at) VALUES (:n, :k, 1, :t, :t)");
-foreach ($seed as [$nama, $kode]) {
-    $st->execute([':n' => $nama, ':k' => $kode, ':t' => $now]);
-}
-// --- Migrasi idempotent untuk DB lama: betulkan seed lama yang salah ---
-$fix = [
-    'KOMPI' => ['Kapus Siber TNI', 'KAPUSSIBER'],
-    'SATKER' => ['Satsiber TNI', 'SATSIBER'],
-];
-foreach ($fix as $oldKode => [$newNama, $newKode]) {
-    $existsNew = $pdo->query("SELECT id FROM preset_penerima WHERE kode = " . $pdo->quote($newKode))->fetch();
-    if ($existsNew) {
-        // Seed baru sudah ada: data lama yang masih menunjuk kode lama dipindah, lalu baris lama dihapus.
-        $pdo->exec(
-            "UPDATE pengiriman SET preset_penerima_id = " . (int) $existsNew['id'] .
-            " WHERE preset_penerima_id IN (SELECT id FROM preset_penerima WHERE kode = " . $pdo->quote($oldKode) . ")"
-        );
-        $pdo->exec("DELETE FROM preset_penerima WHERE kode = " . $pdo->quote($oldKode));
-        $pdo->exec("UPDATE preset_penerima SET nama = " . $pdo->quote($newNama) . " WHERE kode = " . $pdo->quote($newKode));
-    } else {
-        $pdo->exec(
-            "UPDATE preset_penerima SET nama = " . $pdo->quote($newNama) . ", kode = " . $pdo->quote($newKode) .
-            ", updated_at = " . $pdo->quote($now) . " WHERE kode = " . $pdo->quote($oldKode)
-        );
-    }
-}
-// Backfill: baris lama yang NULL dipindah ke preset pertama agar sejalan dengan aturan wajib isi.
-$defId = $pdo->query("SELECT id FROM preset_penerima WHERE kode = 'KAPUSSIBER' LIMIT 1")->fetchColumn();
-if ($defId !== false) {
-    $pdo->exec("UPDATE pengiriman SET preset_penerima_id = " . (int) $defId . " WHERE preset_penerima_id IS NULL");
-}
-
 echo "OK database siap: $dbPath\n";
 echo "WAL: " . $pdo->query("PRAGMA journal_mode")->fetchColumn() . "\n";
-echo "Lanjut: composer install && php -S 0.0.0.0:8090 public/router.php\n";
+echo "Lanjut: php -S 0.0.0.0:8090 public/router.php\n";

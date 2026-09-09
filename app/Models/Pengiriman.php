@@ -15,14 +15,14 @@ final class Pengiriman
         try {
             $st = $pdo->prepare(
                 "INSERT INTO pengiriman
-                (nomor_referensi, preset_penerima_id, nama_penerima, pangkat_golongan, jabatan,
+                (nomor_referensi, nama_satuan_kerja, nama_penerima, pangkat_golongan, jabatan,
                  tanggal, pukul, telp_hp, tanda_tangan_path, created_at, updated_at)
                 VALUES
-                (:nomor, :preset, :nama, :pangkat, :jabatan, :tanggal, :pukul, :telp, :ttd, :now, :now)"
+                (:nomor, :satker, :nama, :pangkat, :jabatan, :tanggal, :pukul, :telp, :ttd, :now, :now)"
             );
             $st->execute([
                 ':nomor' => $d['nomor_referensi'],
-                ':preset' => $d['preset_penerima_id'],
+                ':satker' => $d['nama_satuan_kerja'],
                 ':nama' => $d['nama_penerima'],
                 ':pangkat' => $d['pangkat_golongan'],
                 ':jabatan' => $d['jabatan'],
@@ -49,14 +49,14 @@ final class Pengiriman
         try {
             $st = $pdo->prepare(
                 "UPDATE pengiriman SET
-                    nomor_referensi = :nomor, preset_penerima_id = :preset, nama_penerima = :nama,
+                    nomor_referensi = :nomor, nama_satuan_kerja = :satker, nama_penerima = :nama,
                     pangkat_golongan = :pangkat, jabatan = :jabatan, tanggal = :tanggal,
                     pukul = :pukul, telp_hp = :telp, tanda_tangan_path = :ttd, updated_at = :now
                 WHERE id = :id"
             );
             $st->execute([
                 ':nomor' => $d['nomor_referensi'],
-                ':preset' => $d['preset_penerima_id'],
+                ':satker' => $d['nama_satuan_kerja'],
                 ':nama' => $d['nama_penerima'],
                 ':pangkat' => $d['pangkat_golongan'],
                 ':jabatan' => $d['jabatan'],
@@ -80,8 +80,8 @@ final class Pengiriman
     public static function find(PDO $pdo, int $id): ?array
     {
         $st = $pdo->prepare(
-            "SELECT p.*, c.nama AS preset_nama, c.kode AS preset_kode
-             FROM pengiriman p LEFT JOIN preset_penerima c ON c.id = p.preset_penerima_id
+            "SELECT p.*
+             FROM pengiriman p
              WHERE p.id = :id LIMIT 1"
         );
         $st->execute([':id' => $id]);
@@ -139,8 +139,8 @@ final class Pengiriman
         $offset = ($page - 1) * $perPage;
 
         $st = $pdo->prepare(
-            "SELECT p.*, c.nama AS preset_nama
-             FROM pengiriman p LEFT JOIN preset_penerima c ON c.id = p.preset_penerima_id
+            "SELECT p.*
+             FROM pengiriman p
              $w ORDER BY p.tanggal DESC, p.id DESC LIMIT :lim OFFSET :off"
         );
         foreach ($params as $k => $v) {

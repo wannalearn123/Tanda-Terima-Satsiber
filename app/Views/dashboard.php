@@ -20,7 +20,7 @@ $qstr = fn(int $p): string => http_build_query(array_filter(
   <div class="tablewrap">
     <table class="tbl">
       <thead><tr>
-        <th>No</th><th>Tanggal</th><th>No. Referensi</th><th>Penerima</th><th>Penerima</th><th>Aksi</th>
+        <th>No</th><th>Tanggal</th><th>No. Referensi</th><th>Penerima</th><th>Satuan Kerja</th><th>Aksi</th>
       </tr></thead>
       <tbody>
       <?php if ($rows === []): ?>
@@ -32,7 +32,7 @@ $qstr = fn(int $p): string => http_build_query(array_filter(
           <td><?= e($r['tanggal']) ?> <?= e(substr((string) $r['pukul'], 0, 5)) ?></td>
           <td><?= e($r['nomor_referensi']) ?></td>
           <td><?= e($r['nama_penerima']) ?><?= $r['pangkat_golongan'] !== '' ? '<br><small>' . e($r['pangkat_golongan']) . '</small>' : '' ?></td>
-          <td><?= e($r['preset_nama'] ?? '-') ?></td>
+          <td><?= e($r['nama_satuan_kerja'] ?? '-') ?></td>
           <td class="actions-cell">
             <button class="btn sm" onclick="window.location.href='/pengiriman/<?= (int) $r['id'] ?>'">Lihat</button>
             <button class="btn sm" onclick="window.location.href='/pengiriman/<?= (int) $r['id'] ?>/edit'">Edit</button>
@@ -58,7 +58,7 @@ $qstr = fn(int $p): string => http_build_query(array_filter(
     <div class="mrow"><span>Tanggal</span><b><?= e($r['tanggal']) ?> <?= e(substr((string) $r['pukul'], 0, 5)) ?></b></div>
     <div class="mrow"><span>No. Ref</span><b><?= e($r['nomor_referensi']) ?></b></div>
     <div class="mrow"><span>Penerima</span><b><?= e($r['nama_penerima']) ?></b></div>
-    <div class="mrow"><span>Preset</span><b><?= e($r['preset_nama'] ?? '-') ?></b></div>
+    <div class="mrow"><span>Satuan Kerja</span><b><?= e($r['nama_satuan_kerja'] ?? '-') ?></b></div>
     <div class="mact">
       <button class="btn sm" onclick="window.location.href='/pengiriman/<?= (int) $r['id'] ?>'">Lihat</button>
       <button class="btn sm" onclick="window.location.href='/pengiriman/<?= (int) $r['id'] ?>/edit'">Edit</button>

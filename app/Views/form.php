@@ -1,5 +1,5 @@
 <?php
-// Variabel: $preset (list), $old, $errors, $isEdit, $editId
+// Variabel: $old, $errors, $isEdit, $editId
 $isEdit = $isEdit ?? false;
 $old = $old ?? [];
 $errors = $errors ?? [];
@@ -16,9 +16,9 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
     <div class="grid2">
       <div class="field">
         <label for="preset">Penerima *</label>
-        <input id="preset" name="preset_penerima_id" type="text" maxlength="100" placeholder="Nama Satuan Kerja"
-               value="<?= e($val('preset_penerima_id')) ?>" required>
-        <?= $ferr('preset_penerima_id') ?>
+        <input id="preset" name="nama_satuan_kerja" type="text" maxlength="100" placeholder="Nama Satuan Kerja"
+               value="<?= e($val('nama_satuan_kerja')) ?>" required>
+        <?= $ferr('nama_satuan_kerja') ?>
       </div>
 
       <div class="field">

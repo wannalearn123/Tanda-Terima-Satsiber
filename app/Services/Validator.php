@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\PresetPenerima;
 use PDO;
 
 final class Validator
@@ -19,6 +18,7 @@ final class Validator
         $s = fn(string $k): string => trim((string) ($input[$k] ?? ''));
 
         $nomor = mb_substr($s('nomor_referensi'), 0, 100);
+        $satker = mb_substr($s('nama_satuan_kerja'), 0, 100);
         $nama = mb_substr($s('nama_penerima'), 0, 100);
         $pangkat = mb_substr($s('pangkat_golongan'), 0, 100);
         $jabatan = mb_substr($s('jabatan'), 0, 100);
@@ -28,19 +28,8 @@ final class Validator
         $ttd = (string) ($input['tanda_tangan'] ?? '');
         $ttdBin = null;
 
-        $presetRaw = $s('preset_penerima_id');
-        $preset = null;
-        if ($presetRaw === '') {
-            $errors['preset_penerima_id'] = 'Preset penerima wajib dipilih.';
-        } elseif (!ctype_digit($presetRaw)) {
-            $errors['preset_penerima_id'] = 'Preset penerima tidak valid.';
-        } else {
-            $found = PresetPenerima::find($pdo, (int) $presetRaw);
-            if ($found === null || (int) $found['aktif'] !== 1) {
-                $errors['preset_penerima_id'] = 'Preset penerima tidak dikenal.';
-            } else {
-                $preset = (int) $presetRaw;
-            }
+        if ($satker === '') {
+            $errors['nama_satuan_kerja'] = 'Nama satuan kerja wajib diisi.';
         }
 
         if ($nomor === '') {
@@ -94,7 +83,7 @@ final class Validator
 
         $clean = [
             'nomor_referensi' => $nomor,
-            'preset_penerima_id' => $preset,
+            'nama_satuan_kerja' => $satker,
             'nama_penerima' => $nama,
             'pangkat_golongan' => $pangkat,
             'jabatan' => $jabatan,
