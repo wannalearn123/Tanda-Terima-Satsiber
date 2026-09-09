@@ -7,12 +7,21 @@ cd /d "%~dp0"
 
 echo [*] Starting Tanda-Terima-Satsiber (local one-click)...
 
+REM Check PHP is available
+where php >nul 2>nul
+if errorlevel 1 (
+    echo [X] PHP tidak ditemukan di PATH!
+    echo     Install PHP 8.3 lalu tambahkan ke PATH.
+    pause
+    exit /b 1
+)
+
 echo [*] Memeriksa ekstensi PHP...
 call install-extensions.bat
 
 REM 2. Setup DB if not exists
 if not exist database\database.sqlite (
-    echo [*] Membuat database & seed (setup.php)...
+    echo [*] Membuat database ^& seed ^(setup.php^)...
     php setup.php
 ) else (
     echo [✓] SQLite database sudah ada, lewati setup

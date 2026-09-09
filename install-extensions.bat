@@ -27,7 +27,7 @@ REM Check mbstring
 php -m 2>nul | findstr /i /c:"mbstring" >nul
 if errorlevel 1 set "missing=%missing% mbstring"
 
-if "%missing%"==" " (
+if "%missing%"=="" (
     echo [✓] Semua ekstensi sudah terinstall: gd, pdo_sqlite, mbstring
 ) else (
     echo [*] Ekstensi hilang:%missing%
