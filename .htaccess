@@ -1,0 +1,15 @@
+# Pengaman bila DocumentRoot salah menunjuk ke root proyek (harusnya ke public/).
+# Bila DocumentRoot sudah benar (public/), file ini tidak terbaca dan tidak berpengaruh.
+RewriteEngine On
+RewriteRule ^database/ - [F,L]
+RewriteRule ^storage/ - [F,L]
+RewriteRule ^vendor/ - [F,L]
+RewriteRule (^|/)\.git - [F,L]
+RewriteRule (^|/)setup\.php$ - [F,L]
+RewriteRule \.(sqlite|sqlite-wal|sqlite-shm|log)$ - [F,L]
+RewriteRule (^|/)\.env(\..*)?$ - [F,L]
+RewriteRule ^(compose\.ya?ml|Dockerfile)$ - [F,L]
+
+<FilesMatch "^\.ht">
+    Require all denied
+</FilesMatch>

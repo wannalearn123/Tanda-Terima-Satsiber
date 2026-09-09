@@ -1,0 +1,2 @@
+# Database SQLite tidak boleh diakses langsung via HTTP.
+Require all denied

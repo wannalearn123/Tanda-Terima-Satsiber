@@ -29,6 +29,7 @@ final class Config
             $file = self::root() . '/.env.example';
         }
         if (!is_file($file)) {
+            error_log('[TandaTerima] CRITICAL: No .env or .env.example found. Using defaults.');
             return;
         }
         foreach (file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {

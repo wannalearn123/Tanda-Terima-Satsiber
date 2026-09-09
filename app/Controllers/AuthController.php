@@ -13,6 +13,11 @@ final class AuthController
     public static function current(PDO $pdo): ?array
     {
         ensure_session();
+        if (function_exists('session_idle_expired') && session_idle_expired()) {
+            unset($_SESSION['uid'], $_SESSION['last_activity']);
+            session_regenerate_id(true);
+            return null;
+        }
         $uid = $_SESSION['uid'] ?? null;
         if (!is_int($uid)) {
             return null;
@@ -21,6 +26,9 @@ final class AuthController
         if ($u === null || (int) $u['aktif'] !== 1) {
             unset($_SESSION['uid']);
             return null;
+        }
+        if (function_exists('session_touch_idle')) {
+            session_touch_idle();
         }
         return $u;
     }
@@ -35,13 +43,14 @@ final class AuthController
         }
         session_regenerate_id(true);
         $_SESSION['uid'] = (int) $u['id'];
+        $_SESSION['last_activity'] = time();
         return ['ok' => true];
     }
 
     public static function logout(): void
     {
         ensure_session();
-        unset($_SESSION['uid']);
+        unset($_SESSION['uid'], $_SESSION['last_activity']);
         session_regenerate_id(true);
     }
 

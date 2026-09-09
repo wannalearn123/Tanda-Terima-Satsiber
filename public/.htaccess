@@ -1,4 +1,22 @@
 RewriteEngine On
+
+# Blokir akses dotfiles (.git, .env, .htaccess) dan file sensitif bila docroot
+# tepat (public/) maupun bila salah menunjuk ke root proyek.
+RewriteRule (^|/)\. - [F,L]
+RewriteRule \.(sqlite|sqlite-wal|sqlite-shm|log|env)$ - [F,L]
+RewriteRule ^(setup\.php|compose\.ya?ml|Dockerfile)$ - [F,L]
+
+<FilesMatch "^\.ht">
+    Require all denied
+</FilesMatch>
+
+# Header keamanan dasar (diabaikan bila mod_headers tidak aktif).
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "same-origin"
+</IfModule>
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [QSA,L]

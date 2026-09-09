@@ -11,9 +11,52 @@ function e(mixed $v): string
 
 function ensure_session(): void
 {
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
     }
+    // Hardening cookie sesi: HttpOnly selalu, Secure bila HTTPS, SameSite=Lax
+    // untuk mitigasi XSS-cookie-theft dan CSRF. Harus sebelum session_start().
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.use_trans_sid', '0');
+    ini_set('session.cookie_httponly', '1');
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https');
+    if (PHP_VERSION_ID >= 70300) {
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'secure' => $isHttps,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    } else {
+        ini_set('session.cookie_secure', $isHttps ? '1' : '0');
+    }
+    session_start();
+}
+
+const SESSION_MAX_IDLE = 1800; // 30 menit
+
+function session_touch_idle(): void
+{
+    ensure_session();
+    $_SESSION['last_activity'] = time();
+}
+
+/** True bila sesi login melewati batas idle dan harus diakhiri. */
+function session_idle_expired(int $maxIdle = SESSION_MAX_IDLE): bool
+{
+    ensure_session();
+    if (!isset($_SESSION['uid'])) {
+        return false;
+    }
+    $last = $_SESSION['last_activity'] ?? null;
+    if (!is_int($last)) {
+        $_SESSION['last_activity'] = time();
+        return false;
+    }
+    return (time() - $last) > $maxIdle;
 }
 
 function csrf_token(): string

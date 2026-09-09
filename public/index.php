@@ -67,6 +67,14 @@ if (!Config::isDev()) {
     ini_set('error_log', $logDir . '/php.log');
 }
 
+// Header keamanan HTTP (defense-in-depth; php -S tidak pakai .htaccess).
+if (PHP_SAPI !== 'cli' && !headers_sent()) {
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: same-origin');
+    header("Content-Security-Policy: default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+}
+
 ensure_session();
 
 function render(string $view, array $data, string $title, string $active): void
@@ -315,6 +323,7 @@ if (preg_match('#^/tandatangan/(ttd_[A-Za-z0-9_\-]+\.png)$#', $path, $m) && $met
         exit;
     }
     header('Content-Type: image/png');
+    header('X-Content-Type-Options: nosniff');
     header('Content-Length: ' . filesize($full));
     readfile($full);
     exit;
