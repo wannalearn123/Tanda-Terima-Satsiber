@@ -16,7 +16,7 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
     <div class="grid2">
       <div class="field">
         <label for="preset">Penerima *</label>
-        <input id="preset" name="preset_penerima_id" type="text" maxlength="100" placeholder="Satuan atau Kogabwilhan"
+        <input id="preset" name="preset_penerima_id" type="text" maxlength="100" placeholder="nama satuan kerja"
                value="<?= e($val('preset_penerima_id')) ?>" required>
         <?= $ferr('preset_penerima_id') ?>
       </div>
