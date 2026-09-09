@@ -39,7 +39,7 @@ final class PdfService
             . '<div class="kop"><h1>TENTARA NASIONAL INDONESIA</h1><h2>SATUAN SIBER</h2><p>TANDA TERIMA PENGIRIMAN</p></div>'
             . '<table>'
             . '<tr><th>Nomor Referensi</th><td>' . $h($row['nomor_referensi']) . '</td></tr>'
-            . '<tr><th>Preset Penerima</th><td>' . $h($preset) . '</td></tr>'
+            . '<tr><th>Penerima</th><td>' . $h($preset) . '</td></tr>'
             . '<tr><th>Nama Penerima</th><td>' . $h($row['nama_penerima']) . '</td></tr>'
             . '<tr><th>Pangkat / Golongan</th><td>' . $h($row['pangkat_golongan']) . '</td></tr>'
             . '<tr><th>Jabatan</th><td>' . $h($row['jabatan']) . '</td></tr>'

@@ -20,7 +20,7 @@ $qstr = fn(int $p): string => http_build_query(array_filter(
   <div class="tablewrap">
     <table class="tbl">
       <thead><tr>
-        <th>No</th><th>Tanggal</th><th>No. Referensi</th><th>Penerima</th><th>Preset Penerima</th><th>Aksi</th>
+        <th>No</th><th>Tanggal</th><th>No. Referensi</th><th>Penerima</th><th>Penerima</th><th>Aksi</th>
       </tr></thead>
       <tbody>
       <?php if ($rows === []): ?>

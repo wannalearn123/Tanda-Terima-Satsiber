@@ -3,7 +3,7 @@
   <h1 class="title">DETAIL PENGIRIMAN #<?= (int) $row['id'] ?></h1>
   <dl class="detail">
     <div><dt>Nomor Referensi</dt><dd><?= e($row['nomor_referensi']) ?></dd></div>
-    <div><dt>Preset Penerima</dt><dd><?= e($row['preset_nama'] ?? '-') ?></dd></div>
+    <div><dt>Penerima</dt><dd><?= e($row['preset_nama'] ?? '-') ?></dd></div>
     <div><dt>Nama Penerima</dt><dd><?= e($row['nama_penerima']) ?></dd></div>
     <div><dt>Pangkat / Golongan</dt><dd><?= e($row['pangkat_golongan'] !== '' ? $row['pangkat_golongan'] : '-') ?></dd></div>
     <div><dt>Jabatan</dt><dd><?= e($row['jabatan'] !== '' ? $row['jabatan'] : '-') ?></dd></div>

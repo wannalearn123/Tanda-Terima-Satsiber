@@ -15,15 +15,9 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
 
     <div class="grid2">
       <div class="field">
-        <label for="preset">Preset Penerima *</label>
-        <select id="preset" name="preset_penerima_id" required>
-          <option value="">-- Pilih Preset Penerima --</option>
-          <?php foreach ($preset as $p): ?>
-            <option value="<?= (int) $p['id'] ?>" <?= ((string) ($old['preset_penerima_id'] ?? '') === (string) $p['id']) ? 'selected' : '' ?>>
-              <?= e($p['nama']) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
+        <label for="preset">Penerima *</label>
+        <input id="preset" name="preset_penerima_id" type="text" maxlength="100" placeholder="Nama atau kode penerima"
+               value="<?= e($val('preset_penerima_id')) ?>" required>
         <?= $ferr('preset_penerima_id') ?>
       </div>
 
