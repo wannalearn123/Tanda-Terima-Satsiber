@@ -9,6 +9,7 @@ require $root . '/app/Config/Config.php';
 require $root . '/app/Helpers/helpers.php';
 
 use App\Config\Config;
+use App\Controllers\AgendaController;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
 use App\Controllers\FormController;
@@ -252,6 +253,92 @@ if ($path === '/pengiriman' && $method === 'POST') {
 if ($path === '/dashboard' && $method === 'GET') {
     render('dashboard', DashboardController::index($pdo, $_GET), 'Rekapitulasi', 'dashboard');
     exit;
+}
+
+if ($path === '/agenda' && $method === 'GET') {
+    render('agenda', AgendaController::index($pdo, $_GET), 'Agenda Surat', 'agenda');
+    exit;
+}
+
+if ($path === '/agenda' && $method === 'POST') {
+    $res = AgendaController::store($pdo, $_POST);
+    if (isset($res['id'])) {
+        flash('success', 'Agenda tersimpan (No. ' . (int) ($res['no_agenda'] ?? 0) . ').');
+        redirect('/agenda?arah=' . urlencode((string) ($res['arah'] ?? 'masuk')));
+    }
+    render('agenda', AgendaController::index($pdo, $_GET, $res['old'], $res['errors']), 'Agenda Surat', 'agenda');
+    exit;
+}
+
+if (preg_match('#^/agenda/(\d+)/update$#', $path, $m) && $method === 'POST') {
+    $id = (int) $m[1];
+    try {
+        $res = AgendaController::update($pdo, $id, $_POST);
+    } catch (RuntimeException $e) {
+        http_response_code(404);
+        echo 'Data tidak ditemukan.';
+        exit;
+    }
+    if (isset($res['id'])) {
+        flash('success', 'Perubahan agenda tersimpan.');
+        redirect('/agenda?arah=' . urlencode((string) ($res['arah'] ?? 'masuk')));
+    }
+    $q = $_GET;
+    $q['edit'] = (string) $id;
+    render('agenda', AgendaController::index($pdo, $q, $res['old'], $res['errors']), 'Agenda Surat', 'agenda');
+    exit;
+}
+
+if (preg_match('#^/agenda/(\d+)/disposisi$#', $path, $m) && $method === 'POST') {
+    $agendaId = (int) $m[1];
+    try {
+        $res = AgendaController::tambahDisposisi($pdo, $agendaId, $_POST);
+    } catch (RuntimeException $e) {
+        http_response_code(404);
+        echo 'Data tidak ditemukan.';
+        exit;
+    }
+    if (isset($res['agenda_id'])) {
+        flash('success', 'Disposisi ditambahkan sebagai entry baru.');
+        redirect('/agenda?arah=' . urlencode((string) ($res['arah'] ?? 'masuk')) . '&edit=' . $res['agenda_id']);
+    }
+    $q = $_GET;
+    $q['arah'] = \App\Models\Agenda::normalizeArah($_POST['arah'] ?? 'masuk');
+    render('agenda', AgendaController::index($pdo, $q, $res['old'], $res['errors']), 'Agenda Surat', 'agenda');
+    exit;
+}
+
+if (preg_match('#^/agenda/disposisi/(\d+)/toggle$#', $path, $m) && $method === 'POST') {
+    try {
+        $res = AgendaController::toggleDisposisi($pdo, (int) $m[1], $_POST['_csrf'] ?? null);
+        flash('success', 'Status disposisi diperbarui.');
+        redirect('/agenda?arah=' . urlencode((string) ($res['arah'] ?? 'masuk')) . '&edit=' . $res['agenda_id']);
+    } catch (RuntimeException $e) {
+        $msg = $e->getMessage();
+        if (str_contains($msg, 'Sesi')) {
+            flash('error', 'Sesi kedaluwarsa.');
+            redirect('/agenda');
+        }
+        http_response_code(404);
+        echo 'Data tidak ditemukan.';
+        exit;
+    }
+}
+
+if (preg_match('#^/agenda/(\d+)/delete$#', $path, $m) && $method === 'POST') {
+    require_admin();
+    if (!csrf_verify($_POST['_csrf'] ?? null)) {
+        flash('error', 'Sesi kedaluwarsa.');
+        redirect('/agenda');
+    }
+    try {
+        \App\Models\Agenda::destroy($pdo, (int) $m[1]);
+        flash('success', 'Data agenda #' . $m[1] . ' dihapus.');
+    } catch (\Throwable $e) {
+        app_log('Agenda delete gagal id=' . $m[1] . ': ' . $e->getMessage());
+        flash('error', 'Data gagal dihapus. Silakan coba kembali.');
+    }
+    redirect('/agenda');
 }
 
 if (preg_match('#^/pengiriman/(\d+)$#', $path, $m) && $method === 'GET') {

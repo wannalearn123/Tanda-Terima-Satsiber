@@ -12,8 +12,8 @@ body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.55 system-ui,-ap
 .brand-main{font-size:18px;font-weight:800;letter-spacing:1px}
 .nav{display:flex;gap:8px;align-items:center}
 .nav a,.nav .navlink{color:var(--txt);text-decoration:none;padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:transparent;font:inherit;font-size:15px;line-height:1.55;cursor:pointer}
-.nav .navlink.danger{background:#5a2020;border-color:var(--err)}
-.nav .navlink.danger:hover{background:#7a2b2b}
+.navlink.danger{background:#5a2020;border-color:var(--err)}
+.navlink.danger:hover{background:#7a2b2b}
 .nav a.on,.nav a:hover,.nav .navlink:hover{background:var(--acc);border-color:var(--acc);color:#fff}
 .nav .inline{display:inline-flex;align-items:center}
 main{padding:20px 0 40px}
@@ -24,6 +24,8 @@ main{padding:20px 0 40px}
 .field.grow{flex:1}
 label{font-size:13px;color:var(--muted);font-weight:600}
 input,select,textarea{background:#0d131b;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:11px 12px;font-size:15px;width:100%}
+select{padding-right:38px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239aa7b8' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;background-size:12px 8px}
+select::-ms-expand{display:none}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-color:var(--acc)}
 #sigpad{width:100%;height:220px;background:#fff;border:1px solid var(--line);border-radius:8px;touch-action:none;cursor:crosshair}
 .sigrow{margin-top:8px}
@@ -43,8 +45,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .btn.sm{padding:7px 12px;font-size:14px}
 .btn.danger{background:#5a2020;border-color:var(--err)}
 .btn.danger:hover{background:#7a2b2b}
-.nav .navlink.danger{background:#5a2020;border-color:var(--err)}
-.nav .navlink.danger:hover{background:#7a2b2b}
+.navlink.danger{background:#5a2020;border-color:var(--err)}
+.navlink.danger:hover{background:#7a2b2b}
 .inline{display:inline}
 .inline.grow{flex:1}
 .card.narrow{max-width:400px;width:100%}
@@ -66,9 +68,38 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .login-page{display:flex;justify-content:center;padding-top:40px}
 .pager{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:14px}
 .foot{text-align:center;color:var(--muted);padding:18px}
+.wrap.wide{max-width:1280px}
+.wrap.agenda-flex{width:fit-content;max-width:none;margin:0 auto;padding:0 16px}
+.agenda-grid{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+.agenda-form .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sub-nav{display:flex;justify-content:center;gap:8px;padding:8px 16px;background:transparent;border-bottom:1px solid var(--line)}
+.sub-nav .nav-scroll{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:thin;-webkit-overflow-scrolling:touch;white-space:nowrap}
+.sub-nav a,.sub-nav .navlink{padding:8px 14px;font-size:15px}
+.tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.tabs .btn{padding:11px 18px;font-size:15px}
+.agenda-filter{display:grid;grid-template-columns:1fr 220px auto;gap:10px;align-items:end}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--txt)}
+.check input{width:auto}
+.agenda-list{min-width:0}
+.agenda-list .tbl{width:auto;min-width:0;font-size:14px}
+.agenda-list .tbl th,.agenda-list .tbl td{white-space:nowrap}
+.agenda-list .tbl td.perihal{white-space:normal;max-width:280px}
+.agenda-form .mrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.agenda-form .mrow span{color:var(--muted);font-size:13px;white-space:nowrap}
+.agenda-form .mrow b{font-size:14px;text-align:right}
+.agenda-form .mrow .check{white-space:nowrap}
+.btn.icon{padding:7px 10px;text-align:center;line-height:1}
+.btn.icon svg{display:inline-block;width:16px;height:16px;vertical-align:middle;fill:currentColor}
+@media(max-width:1024px){
+  .agenda-grid{grid-template-columns:1fr}
+}
 @media(max-width:720px){
+  .nav-scroll{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;scrollbar-width:thin;-webkit-overflow-scrolling:touch;align-items:center}
+  .nav-scroll a,.nav-scroll .navlink{padding:7px 10px;font-size:14px;white-space:nowrap}
   .form .grid2{grid-template-columns:1fr}
   .filter{grid-template-columns:1fr 1fr}
+  .agenda-filter{grid-template-columns:1fr}
+  .agenda-filter .btnline .btn{width:100%}
   .filter .grow,.filter .btnline{grid-column:1/-1}
   .filter .btnline .btn{width:100%}
   .actions{flex-direction:column}

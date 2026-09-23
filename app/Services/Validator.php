@@ -105,4 +105,130 @@ final class Validator
         $dt = \DateTime::createFromFormat('Y-m-d', $v);
         return ($dt !== false && $dt->format('Y-m-d') === $v) ? $v : null;
     }
+
+    private static function collapseSpaces(string $v): string
+    {
+        return (string) preg_replace('/\s+/u', ' ', trim($v));
+    }
+
+    private static function toTitle(string $v): string
+    {
+        $v = self::collapseSpaces($v);
+        return mb_convert_case(mb_strtolower($v, 'UTF-8'), MB_CASE_TITLE, 'UTF-8');
+    }
+
+    /**
+     * Validasi + standardisasi Agenda sebelum masuk DB.
+     * No. Agenda TIDAK diinput user: otomatis MAX+1 per arah saat create, dikunci saat update.
+     * Aturan case: arah lower, no_surat UPPER, kepada/aktor/kegiatan Title Case,
+     * perihal trim+collapse (huruf pertama kapital).
+     *
+     * @return array{0: array<string,string>, 1: array<string,mixed>}
+     */
+    public static function agenda(array $input, PDO $pdo, ?int $excludeId = null): array
+    {
+        $errors = [];
+
+        $arah = strtolower(trim((string) ($input['arah'] ?? 'masuk')));
+        if (!in_array($arah, ['masuk', 'keluar'], true)) {
+            $arah = 'masuk';
+        }
+        $sub = self::collapseSpaces((string) ($input['sub_jenis'] ?? ''));
+        if ($sub === '') {
+            $errors['sub_jenis'] = 'Sub-jenis wajib dipilih.';
+        } else {
+            $grandfathered = false;
+            if ($excludeId !== null) {
+                $existing = \App\Models\Agenda::find($pdo, $excludeId);
+                if ($existing !== null && (string) ($existing['sub_jenis'] ?? '') === $sub) {
+                    $grandfathered = true; // nilai lama dipertahankan, walau flag kini mati
+                }
+            }
+            if (!$grandfathered && !\App\Models\Agenda::isValidSubJenis($pdo, $arah, $sub)) {
+                $errors['sub_jenis'] = 'Sub-jenis tidak valid untuk surat ' . $arah . '.';
+            }
+        }
+
+        $noSurat = mb_strtoupper(self::collapseSpaces((string) ($input['no_surat'] ?? '')), 'UTF-8');
+        $noSurat = mb_substr($noSurat, 0, 100);
+        if ($noSurat === '') {
+            $errors['no_surat'] = 'No. Surat wajib diisi.';
+        }
+
+        $tanggal = trim((string) ($input['tanggal'] ?? ''));
+        $dt = \DateTime::createFromFormat('Y-m-d', $tanggal);
+        if ($dt === false || $dt->format('Y-m-d') !== $tanggal) {
+            $errors['tanggal'] = 'Format tanggal tidak valid (YYYY-MM-DD).';
+        }
+
+        $kepada = self::toTitle((string) ($input['kepada'] ?? ''));
+        $kepada = mb_substr($kepada, 0, 150);
+        if ($kepada === '') {
+            $errors['kepada'] = 'Kepada (instansi / perorangan) wajib diisi.';
+        }
+
+        $perihal = self::collapseSpaces((string) ($input['perihal'] ?? ''));
+        $perihal = mb_substr($perihal, 0, 500);
+        if ($perihal === '') {
+            $errors['perihal'] = 'Perihal / ringkasan surat wajib diisi.';
+        } else {
+            $perihal = mb_strtoupper(mb_substr($perihal, 0, 1, 'UTF-8'), 'UTF-8')
+                . mb_substr($perihal, 1, null, 'UTF-8');
+        }
+
+        $aktor = self::toTitle((string) ($input['disposisi_aktor'] ?? ''));
+        $aktor = mb_substr($aktor, 0, 100);
+        if ($aktor === '') {
+            $errors['disposisi_aktor'] = 'Aktor disposisi wajib diisi (contoh: Perwira 1).';
+        }
+
+        $kegiatan = self::toTitle((string) ($input['disposisi_kegiatan'] ?? ''));
+        $kegiatan = mb_substr($kegiatan, 0, 200);
+        if ($kegiatan === '') {
+            $errors['disposisi_kegiatan'] = 'Kegiatan disposisi wajib diisi (contoh: Untuk Dipedomani).';
+        }
+
+        $clean = [
+            'arah' => $arah,
+            'sub_jenis' => $sub,
+            'no_surat' => $noSurat,
+            'tanggal' => $tanggal,
+            'kepada' => $kepada,
+            'perihal' => $perihal,
+            'now' => date('Y-m-d H:i:s'),
+        ];
+        return [$errors, $clean];
+    }
+
+    /**
+     * Validasi satu entry disposisi (tambah baru maupun disposisi pertama).
+     * Entry baru selalu mulai belum selesai (0). Standardisasi Title Case.
+     *
+     * @return array{0: array<string,string>, 1: array<string,mixed>}
+     */
+    public static function agendaDisposisi(array $input): array
+    {
+        $errors = [];
+
+        $aktor = self::toTitle((string) ($input['disposisi_aktor'] ?? ''));
+        $aktor = mb_substr($aktor, 0, 100);
+        if ($aktor === '') {
+            $errors['disposisi_aktor'] = 'Aktor disposisi wajib diisi (contoh: Perwira 1).';
+        }
+
+        $kegiatan = self::toTitle((string) ($input['disposisi_kegiatan'] ?? ''));
+        $kegiatan = mb_substr($kegiatan, 0, 200);
+        if ($kegiatan === '') {
+            $errors['disposisi_kegiatan'] = 'Kegiatan disposisi wajib diisi (contoh: Untuk Dipedomani).';
+        }
+
+        $selesai = (isset($input['disposisi_selesai']) && (string) $input['disposisi_selesai'] === '1') ? 1 : 0;
+
+        return [$errors, [
+            'disposisi_aktor' => $aktor,
+            'disposisi_kegiatan' => $kegiatan,
+            'disposisi_selesai' => $selesai,
+            'now' => date('Y-m-d H:i:s'),
+        ]];
+    }
 }
