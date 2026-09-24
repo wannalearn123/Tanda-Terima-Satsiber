@@ -20,7 +20,7 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
   <h1 class="title">AGENDA SURAT</h1>
   <div class="agenda-grid">
     <div class="agenda-form">
-      <h2 class="sub"><?= $isEdit ? 'Edit Surat ' . e((string) $editNoFmt) : 'Input Surat Baru' ?></h2>
+      <?php if ($isEdit): ?><h2 class="sub">Edit Surat <?= e((string) $editNoFmt) ?></h2><?php endif; ?>
       <form method="post" action="<?= $isEdit ? '/agenda/' . (int) $editId . '/update' : '/agenda' ?>" class="form" novalidate>
         <?= csrf_field() ?>
         <?php if ($isEdit): ?>
