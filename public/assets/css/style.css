@@ -38,6 +38,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .alert.ok{background:#123324;border:1px solid var(--ok)}
 .alert.err{background:#3a1717;border:1px solid var(--err)}
 .actions{display:flex;gap:10px;margin-top:8px}
+.actions .btn{flex:1;white-space:nowrap;padding:11px 10px}
 .btn{display:inline-block;background:#243145;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:11px 18px;text-decoration:none;cursor:pointer;font-size:15px;text-align:center}
 .btn.primary{background:var(--acc);border-color:var(--acc)}
 .btn.primary:hover{background:var(--acc2)}
@@ -61,6 +62,11 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .tbl th,.tbl td{border:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top}
 .tbl th{background:#212d40}
 .actions-cell{white-space:nowrap}
+.agenda-grid > *{min-width:0}
+.mrow b.leader{display:flex;align-items:center;gap:6px;flex:1;min-width:0;max-width:100%}
+.mrow b.leader .ll{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow b.leader .fill{flex:1;min-width:0;border-bottom:1px solid var(--muted)}
+.mrow b.leader .rl{white-space:nowrap}
 .mcard{display:none}
 .detail>div{display:grid;grid-template-columns:200px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .detail dt{color:var(--muted)} .detail dd{margin:0}
@@ -72,7 +78,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .wrap.agenda-flex{width:fit-content;max-width:none;margin:0 auto;padding:0 16px}
 .agenda-grid{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
 .agenda-form .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.sub-nav{display:flex;justify-content:center;gap:8px;padding:8px 16px;background:transparent;border-bottom:1px solid var(--line)}
+.sub-nav{display:flex;justify-content:center;gap:8px;padding:8px 16px;background:transparent}
 .sub-nav .nav-scroll{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:thin;-webkit-overflow-scrolling:touch;white-space:nowrap}
 .sub-nav a,.sub-nav .navlink{padding:8px 14px;font-size:15px}
 .tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
@@ -84,7 +90,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .agenda-list .tbl{width:auto;min-width:0;font-size:14px}
 .agenda-list .tbl th,.agenda-list .tbl td{white-space:nowrap}
 .agenda-list .tbl td.perihal{white-space:normal;max-width:280px}
-.agenda-form .mrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.agenda-form .mrow{display:flex;justify-content:space-between;align-items:center;gap:80px;padding:6px 0;border-bottom:1px solid var(--line)}
 .agenda-form .mrow span{color:var(--muted);font-size:13px;white-space:nowrap}
 .agenda-form .mrow b{font-size:14px;text-align:right}
 .agenda-form .mrow .check{white-space:nowrap}

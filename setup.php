@@ -60,7 +60,7 @@ foreach ([
     $pdo->exec($sql);
 }
 
-// --- Agenda surat (masuk/keluar, disposisi 3 kolom, no_agenda angka unik per arah) ---
+// --- Agenda surat (dikelompokkan per arah + sub-jenis; nomor MAX+1 per grup) ---
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS agenda_surat (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,12 +71,9 @@ $pdo->exec(
         tanggal TEXT NOT NULL,
         kepada TEXT NOT NULL,
         perihal TEXT NOT NULL DEFAULT '',
-        disposisi_aktor TEXT NOT NULL DEFAULT '',
-        disposisi_kegiatan TEXT NOT NULL DEFAULT '',
-        disposisi_selesai INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
-        UNIQUE(arah, no_agenda)
+        UNIQUE(arah, sub_jenis, no_agenda)
     )"
 );
 
@@ -84,17 +81,20 @@ foreach ([
     "CREATE INDEX IF NOT EXISTS idx_agenda_arah_tanggal ON agenda_surat(arah, tanggal)",
     "CREATE INDEX IF NOT EXISTS idx_agenda_no_surat ON agenda_surat(no_surat)",
     "CREATE INDEX IF NOT EXISTS idx_agenda_kepada ON agenda_surat(kepada)",
+    "CREATE INDEX IF NOT EXISTS idx_agenda_grup ON agenda_surat(arah, sub_jenis, no_agenda)",
 ] as $sql) {
     $pdo->exec($sql);
 }
 
-// --- Master jenis surat Agenda (satu tabel, flag tampil per arah; tanpa kolom aktif) ---
+// --- Master jenis surat Agenda (satu tabel, flag tampil + kode nomor per arah) ---
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS agenda_sub_jenis (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nama TEXT NOT NULL UNIQUE,
         tampil_masuk INTEGER NOT NULL DEFAULT 1 CHECK(tampil_masuk IN (0,1)),
         tampil_keluar INTEGER NOT NULL DEFAULT 1 CHECK(tampil_keluar IN (0,1)),
+        kode_masuk TEXT NULL,
+        kode_keluar TEXT NULL,
         urutan INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -102,23 +102,23 @@ $pdo->exec(
 );
 
 $seedJenis = [
-    // [nama, tampil_masuk, tampil_keluar, urutan]
-    ['Surat Rahasia', 1, 1, 1],
-    ['Surat Telegram', 1, 1, 2],
-    ['Surat Biasa', 1, 1, 3],
-    ['Surat Edaran', 1, 1, 4],
-    ['Surat Keputusan', 1, 1, 5],
-    ['Surat Perintah (Sprin)', 1, 1, 6],
-    ['Surat Ijin Jalan', 0, 1, 7],
-    ['Surat Ijin Nikah', 0, 1, 8],
-    ['Surat Keterangan', 0, 1, 9],
+    // [nama, tampil_masuk, tampil_keluar, kode_masuk, kode_keluar, urutan]
+    ['Surat Rahasia', 1, 1, 'SMR', 'SKR', 1],
+    ['Surat Telegram', 1, 1, 'SMT', 'SKT', 2],
+    ['Surat Biasa', 1, 1, 'SMB', 'SKB', 3],
+    ['Surat Edaran', 1, 1, 'SME', 'SKE', 4],
+    ['Surat Keputusan', 1, 1, 'SMK', 'SKK', 5],
+    ['Surat Perintah (Sprin)', 1, 1, 'SMS', 'SKS', 6],
+    ['Surat Ijin Jalan', 0, 1, null, 'SKIJ', 7],
+    ['Surat Ijin Nikah', 0, 1, null, 'SKIN', 8],
+    ['Surat Keterangan', 0, 1, null, 'SKKet', 9],
 ];
 $stJenis = $pdo->prepare(
-    "INSERT OR IGNORE INTO agenda_sub_jenis (nama, tampil_masuk, tampil_keluar, urutan, created_at, updated_at)
-     VALUES (:nama, :m, :k, :u, :t, :t)"
+    "INSERT OR IGNORE INTO agenda_sub_jenis (nama, tampil_masuk, tampil_keluar, kode_masuk, kode_keluar, urutan, created_at, updated_at)
+     VALUES (:nama, :m, :k, :km, :kk, :u, :t, :t)"
 );
-foreach ($seedJenis as [$nama, $m, $k, $u]) {
-    $stJenis->execute([':nama' => $nama, ':m' => $m, ':k' => $k, ':u' => $u, ':t' => $now]);
+foreach ($seedJenis as [$nama, $m, $k, $km, $kk, $u]) {
+    $stJenis->execute([':nama' => $nama, ':m' => $m, ':k' => $k, ':km' => $km, ':kk' => $kk, ':u' => $u, ':t' => $now]);
 }
 
 // --- Riwayat disposisi Agenda (satu surat -> banyak entry kronologis) ---
@@ -128,26 +128,11 @@ $pdo->exec(
         agenda_id INTEGER NOT NULL REFERENCES agenda_surat(id) ON DELETE CASCADE,
         aktor TEXT NOT NULL,
         kegiatan TEXT NOT NULL,
-        selesai INTEGER NOT NULL DEFAULT 0 CHECK(selesai IN (0,1)),
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
     )"
 );
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_disposisi_agenda ON agenda_disposisi(agenda_id, id)");
-
-// Migrasi sekali jalan: pindahkan disposisi tunggal lama menjadi entry riwayat pertama.
-$agendaCols = array_column($pdo->query("PRAGMA table_info(agenda_surat)")->fetchAll(), 'name');
-if (in_array('disposisi_aktor', $agendaCols, true)) {
-    $pdo->exec(
-        "INSERT INTO agenda_disposisi (agenda_id, aktor, kegiatan, selesai, created_at, updated_at)
-         SELECT id, disposisi_aktor, disposisi_kegiatan, disposisi_selesai, created_at, updated_at
-         FROM agenda_surat WHERE disposisi_aktor <> '' OR disposisi_kegiatan <> ''"
-    );
-    foreach (['disposisi_aktor', 'disposisi_kegiatan', 'disposisi_selesai'] as $dropCol) {
-        $pdo->exec("ALTER TABLE agenda_surat DROP COLUMN $dropCol");
-    }
-    echo "Migrasi disposisi -> riwayat selesai\n";
-}
 
 // --- Autentikasi ---
 $pdo->exec(

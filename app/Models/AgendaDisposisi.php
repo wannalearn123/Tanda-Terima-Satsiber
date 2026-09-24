@@ -27,12 +27,12 @@ final class AgendaDisposisi
         return $row === false ? null : $row;
     }
 
-    /** Entry baru selalu mulai belum selesai (0). */
+    /** Entry riwayat baru (append-only). */
     public static function create(PDO $pdo, int $agendaId, array $d): int
     {
         $st = $pdo->prepare(
-            'INSERT INTO agenda_disposisi (agenda_id, aktor, kegiatan, selesai, created_at, updated_at)
-             VALUES (:aid, :aktor, :kegiatan, 0, :now, :now)'
+            'INSERT INTO agenda_disposisi (agenda_id, aktor, kegiatan, created_at, updated_at)
+             VALUES (:aid, :aktor, :kegiatan, :now, :now)'
         );
         $st->execute([
             ':aid' => $agendaId,
@@ -41,31 +41,6 @@ final class AgendaDisposisi
             ':now' => $d['now'],
         ]);
         return (int) $pdo->lastInsertId();
-    }
-
-    /** Balik ceklis 0/1 per entry. Kembalikan baris sesudah toggle. */
-    public static function toggle(PDO $pdo, int $id): array
-    {
-        $pdo->beginTransaction();
-        try {
-            $row = self::find($pdo, $id);
-            if ($row === null) {
-                throw new \RuntimeException('Disposisi tidak ditemukan.');
-            }
-            $st = $pdo->prepare(
-                'UPDATE agenda_disposisi SET selesai = 1 - selesai, updated_at = :now WHERE id = :id'
-            );
-            $st->execute([':now' => date('Y-m-d H:i:s'), ':id' => $id]);
-            $pdo->commit();
-            $updated = self::find($pdo, $id);
-            \assert($updated !== null);
-            return $updated;
-        } catch (\Throwable $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            throw $e;
-        }
     }
 
     /**

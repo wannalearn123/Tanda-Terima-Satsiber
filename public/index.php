@@ -263,7 +263,7 @@ if ($path === '/agenda' && $method === 'GET') {
 if ($path === '/agenda' && $method === 'POST') {
     $res = AgendaController::store($pdo, $_POST);
     if (isset($res['id'])) {
-        flash('success', 'Agenda tersimpan (No. ' . (int) ($res['no_agenda'] ?? 0) . ').');
+        flash('success', 'Agenda tersimpan (No. ' . (string) ($res['no_fmt'] ?? $res['no_agenda'] ?? '') . ').');
         redirect('/agenda?arah=' . urlencode((string) ($res['arah'] ?? 'masuk')));
     }
     render('agenda', AgendaController::index($pdo, $_GET, $res['old'], $res['errors']), 'Agenda Surat', 'agenda');
@@ -308,23 +308,6 @@ if (preg_match('#^/agenda/(\d+)/disposisi$#', $path, $m) && $method === 'POST') 
     exit;
 }
 
-if (preg_match('#^/agenda/disposisi/(\d+)/toggle$#', $path, $m) && $method === 'POST') {
-    try {
-        $res = AgendaController::toggleDisposisi($pdo, (int) $m[1], $_POST['_csrf'] ?? null);
-        flash('success', 'Status disposisi diperbarui.');
-        redirect('/agenda?arah=' . urlencode((string) ($res['arah'] ?? 'masuk')) . '&edit=' . $res['agenda_id']);
-    } catch (RuntimeException $e) {
-        $msg = $e->getMessage();
-        if (str_contains($msg, 'Sesi')) {
-            flash('error', 'Sesi kedaluwarsa.');
-            redirect('/agenda');
-        }
-        http_response_code(404);
-        echo 'Data tidak ditemukan.';
-        exit;
-    }
-}
-
 if (preg_match('#^/agenda/(\d+)/delete$#', $path, $m) && $method === 'POST') {
     require_admin();
     if (!csrf_verify($_POST['_csrf'] ?? null)) {
@@ -332,8 +315,15 @@ if (preg_match('#^/agenda/(\d+)/delete$#', $path, $m) && $method === 'POST') {
         redirect('/agenda');
     }
     try {
+        $row = \App\Models\Agenda::find($pdo, (int) $m[1]);
+        $label = $row !== null
+            ? \App\Models\Agenda::formatNo(
+                \App\Models\Agenda::kodeFor($pdo, (string) $row['arah'], (string) $row['sub_jenis']),
+                (int) $row['no_agenda']
+            )
+            : '#' . $m[1];
         \App\Models\Agenda::destroy($pdo, (int) $m[1]);
-        flash('success', 'Data agenda #' . $m[1] . ' dihapus.');
+        flash('success', 'Data agenda ' . $label . ' dihapus.');
     } catch (\Throwable $e) {
         app_log('Agenda delete gagal id=' . $m[1] . ': ' . $e->getMessage());
         flash('error', 'Data gagal dihapus. Silakan coba kembali.');

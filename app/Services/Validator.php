@@ -119,7 +119,9 @@ final class Validator
 
     /**
      * Validasi + standardisasi Agenda sebelum masuk DB.
-     * No. Agenda TIDAK diinput user: otomatis MAX+1 per arah saat create, dikunci saat update.
+     * No. Agenda TIDAK diinput user: otomatis MAX+1 per grup (arah + sub_jenis)
+     * saat create, dikunci saat update. Arah dan sub_jenis juga dikunci saat
+     * update (surat yang sudah masuk tidak bisa ganti jenis).
      * Aturan case: arah lower, no_surat UPPER, kepada/aktor/kegiatan Title Case,
      * perihal trim+collapse (huruf pertama kapital).
      *
@@ -137,14 +139,16 @@ final class Validator
         if ($sub === '') {
             $errors['sub_jenis'] = 'Sub-jenis wajib dipilih.';
         } else {
-            $grandfathered = false;
             if ($excludeId !== null) {
                 $existing = \App\Models\Agenda::find($pdo, $excludeId);
-                if ($existing !== null && (string) ($existing['sub_jenis'] ?? '') === $sub) {
-                    $grandfathered = true; // nilai lama dipertahankan, walau flag kini mati
+                if ($existing !== null
+                    && ((string) ($existing['arah'] ?? '') !== $arah
+                        || (string) ($existing['sub_jenis'] ?? '') !== $sub)) {
+                    $errors['sub_jenis'] = 'Arah dan jenis surat tidak dapat diubah setelah disimpan.';
+                    $arah = (string) ($existing['arah'] ?? $arah);
+                    $sub = (string) ($existing['sub_jenis'] ?? $sub);
                 }
-            }
-            if (!$grandfathered && !\App\Models\Agenda::isValidSubJenis($pdo, $arah, $sub)) {
+            } elseif (!\App\Models\Agenda::isValidSubJenis($pdo, $arah, $sub)) {
                 $errors['sub_jenis'] = 'Sub-jenis tidak valid untuk surat ' . $arah . '.';
             }
         }
@@ -176,18 +180,6 @@ final class Validator
                 . mb_substr($perihal, 1, null, 'UTF-8');
         }
 
-        $aktor = self::toTitle((string) ($input['disposisi_aktor'] ?? ''));
-        $aktor = mb_substr($aktor, 0, 100);
-        if ($aktor === '') {
-            $errors['disposisi_aktor'] = 'Aktor disposisi wajib diisi (contoh: Perwira 1).';
-        }
-
-        $kegiatan = self::toTitle((string) ($input['disposisi_kegiatan'] ?? ''));
-        $kegiatan = mb_substr($kegiatan, 0, 200);
-        if ($kegiatan === '') {
-            $errors['disposisi_kegiatan'] = 'Kegiatan disposisi wajib diisi (contoh: Untuk Dipedomani).';
-        }
-
         $clean = [
             'arah' => $arah,
             'sub_jenis' => $sub,
@@ -201,8 +193,7 @@ final class Validator
     }
 
     /**
-     * Validasi satu entry disposisi (tambah baru maupun disposisi pertama).
-     * Entry baru selalu mulai belum selesai (0). Standardisasi Title Case.
+     * Validasi satu entry disposisi. Standardisasi Title Case.
      *
      * @return array{0: array<string,string>, 1: array<string,mixed>}
      */
@@ -222,12 +213,9 @@ final class Validator
             $errors['disposisi_kegiatan'] = 'Kegiatan disposisi wajib diisi (contoh: Untuk Dipedomani).';
         }
 
-        $selesai = (isset($input['disposisi_selesai']) && (string) $input['disposisi_selesai'] === '1') ? 1 : 0;
-
         return [$errors, [
             'disposisi_aktor' => $aktor,
             'disposisi_kegiatan' => $kegiatan,
-            'disposisi_selesai' => $selesai,
             'now' => date('Y-m-d H:i:s'),
         ]];
     }

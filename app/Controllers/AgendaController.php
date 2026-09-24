@@ -80,6 +80,22 @@ final class AgendaController
         $formArah = Agenda::normalizeArah($form['arah'] ?? $arah);
         $formSubList = $formArah === Agenda::ARAH_KELUAR ? $subKeluar : $subMasuk;
 
+        $kodeMap = Agenda::kodeMap($pdo);
+        $fmtNo = static function (array $r) use ($kodeMap): string {
+            $a = Agenda::normalizeArah($r['arah'] ?? 'masuk');
+            $s = (string) ($r['sub_jenis'] ?? '');
+            $kode = $kodeMap[$a][$s] ?? ($a === Agenda::ARAH_KELUAR ? 'SK' : 'SM');
+            return Agenda::formatNo($kode, (int) ($r['no_agenda'] ?? 0));
+        };
+
+        $editNoFmt = null;
+        if ($isEdit && $editId !== null) {
+            $found = Agenda::find($pdo, $editId);
+            if ($found !== null) {
+                $editNoFmt = $fmtNo($found);
+            }
+        }
+
         $summaries = AgendaDisposisi::summaryForMany($pdo, array_column($list['rows'], 'id'));
 
         return [
@@ -100,10 +116,13 @@ final class AgendaController
             'isEdit' => $isEdit,
             'editId' => $editId,
             'editNoAgenda' => $editNoAgenda,
+            'editNoFmt' => $editNoFmt,
             'riwayat' => $riwayat,
             'dispErrors' => $dispErrors,
             'dispOld' => $dispOld,
             'summaries' => $summaries,
+            'kodeMap' => $kodeMap,
+            'fmtNo' => $fmtNo,
         ];
     }
 
@@ -114,14 +133,13 @@ final class AgendaController
             return ['errors' => ['_csrf' => 'Sesi kedaluwarsa. Muat ulang halaman.'], 'old' => $input];
         }
         [$errors, $clean] = Validator::agenda($input, $pdo);
-        [$de, $dclean] = Validator::agendaDisposisi($input);
-        $errors += $de;
         if ($errors !== []) {
             return ['errors' => $errors, 'old' => $input];
         }
         try {
-            $res = Agenda::create($pdo, $clean, $dclean);
-            return ['id' => $res['id'], 'arah' => $clean['arah'], 'no_agenda' => $res['no_agenda']];
+            $res = Agenda::create($pdo, $clean);
+            $res['no_fmt'] = Agenda::formatNo($res['kode'], $res['no_agenda']);
+            return ['id' => $res['id'], 'arah' => $clean['arah'], 'no_agenda' => $res['no_agenda'], 'no_fmt' => $res['no_fmt']];
         } catch (\Throwable $e) {
             app_log('Agenda simpan gagal: ' . $e->getMessage());
             return ['errors' => ['form' => 'Data gagal disimpan. Silakan coba kembali.'], 'old' => $input];
@@ -154,7 +172,7 @@ final class AgendaController
     }
 
     /**
-     * Tambah satu entry riwayat disposisi (selalu mulai belum selesai).
+     * Tambah satu entry riwayat disposisi.
      * @return array{agenda_id: int, arah: string}|array{errors: array, old: array}
      */
     public static function tambahDisposisi(PDO $pdo, int $agendaId, array $input): array
@@ -192,19 +210,5 @@ final class AgendaController
             $input['__disp_errors'] = ['form' => 'Disposisi gagal ditambahkan. Silakan coba kembali.'];
             return ['errors' => ['form' => 'Disposisi gagal ditambahkan. Silakan coba kembali.'], 'old' => $input];
         }
-    }
-
-    /** Balik ceklis satu entry. Kembalikan agenda pemilik untuk redirect. */
-    public static function toggleDisposisi(PDO $pdo, int $dispId, ?string $csrf): array
-    {
-        if (!csrf_verify($csrf)) {
-            throw new \RuntimeException('Sesi kedaluwarsa.');
-        }
-        $row = AgendaDisposisi::toggle($pdo, $dispId);
-        $surat = Agenda::find($pdo, (int) $row['agenda_id']);
-        if ($surat === null) {
-            throw new \RuntimeException('Data tidak ditemukan.');
-        }
-        return ['agenda_id' => (int) $row['agenda_id'], 'arah' => Agenda::normalizeArah($surat['arah'])];
     }
 }

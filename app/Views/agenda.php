@@ -1,7 +1,9 @@
 <?php
-// Variabel: $arah, $subList, $subMasuk, $subKeluar, $formSubList, $sub, $q, $rows, $total, $page, $pages, $counts, $form, $errors, $isEdit, $editId, $editNoAgenda, $riwayat, $dispErrors, $dispOld, $summaries
+// Variabel: $arah, $subList, $subMasuk, $subKeluar, $formSubList, $sub, $q, $rows, $total, $page, $pages, $counts, $form, $errors, $isEdit, $editId, $editNoAgenda, $editNoFmt, $riwayat, $dispErrors, $dispOld, $summaries, $kodeMap, $fmtNo
 $val = fn(string $k, string $d = ''): string => (string) ($form[$k] ?? $d);
 $ferr = fn(string $k): string => isset($errors[$k]) ? '<div class="ferr">' . e($errors[$k]) . '</div>' : '';
+$fmtNoFn = $fmtNo ?? (fn(array $r): string => (string) ((int) ($r['no_agenda'] ?? 0)));
+$editNoFmt = $editNoFmt ?? ($editNoAgenda !== null ? (string) $editNoAgenda : null);
 $formArah = strtolower((string) ($form['arah'] ?? $arah));
 if (!in_array($formArah, ['masuk', 'keluar'], true)) { $formArah = $arah; }
 $formSubList = $formSubList ?? $subList ?? [];
@@ -18,9 +20,21 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
   <h1 class="title">AGENDA SURAT</h1>
   <div class="agenda-grid">
     <div class="agenda-form">
-      <h2 class="sub">Input Surat Baru</h2>
+      <h2 class="sub"><?= $isEdit ? 'Ubah Surat ' . e((string) $editNoFmt) : 'Input Surat Baru' ?></h2>
       <form method="post" action="<?= $isEdit ? '/agenda/' . (int) $editId . '/update' : '/agenda' ?>" class="form" novalidate>
         <?= csrf_field() ?>
+        <?php if ($isEdit): ?>
+        <div class="field">
+          <label>Arah Surat</label>
+          <input type="text" value="<?= $formArah === 'keluar' ? 'Surat Keluar' : 'Surat Masuk' ?>" disabled>
+          <input type="hidden" name="arah" value="<?= e($formArah) ?>">
+        </div>
+        <div class="field">
+          <label>Jenis Surat</label>
+          <input type="text" value="<?= e((string) ($form['sub_jenis'] ?? '')) ?>" disabled>
+          <input type="hidden" name="sub_jenis" value="<?= e((string) ($form['sub_jenis'] ?? '')) ?>">
+        </div>
+        <?php else: ?>
         <div class="field">
           <label for="arah">Arah Surat *</label>
           <select id="arah" name="arah" required>
@@ -42,6 +56,8 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
           </select>
           <?= $ferr('sub_jenis') ?>
         </div>
+        <?php endif; ?>
+        <?= $ferr('sub_jenis') ?>
         <div class="field">
           <label for="tanggal">Tanggal *</label>
           <input id="tanggal" name="tanggal" type="date" value="<?= e($val('tanggal')) ?>" required>
@@ -65,71 +81,54 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
           <?= $ferr('perihal') ?>
         </div>
         <?php if ($isEdit): ?>
-        <fieldset class="group"><legend>RIWAYAT DISPOSISI</legend>
-          <?php $riwayat = $riwayat ?? []; ?>
-          <?php if ($riwayat === []): ?>
-            <p class="muted">Belum ada disposisi.</p>
-          <?php else: ?>
-            <?php foreach ($riwayat as $i => $w): ?>
-            <div class="mrow">
-              <span>#<?= $i + 1 ?> · <?= e(substr((string) $w['created_at'], 0, 10)) ?></span>
-              <b><?= e($w['aktor']) ?> — <?= e($w['kegiatan']) ?></b>
-              <form class="inline" method="post" action="/agenda/disposisi/<?= (int) $w['id'] ?>/toggle" title="Ubah status entry ini">
-                <?= csrf_field() ?>
-                <label class="check"><input type="checkbox" value="1" <?= ((int) $w['selesai'] === 1) ? 'checked' : '' ?> onchange="this.form.submit()"> <?= ((int) $w['selesai'] === 1) ? 'Selesai' : 'Belum' ?></label>
-              </form>
-            </div>
-            <?php endforeach; ?>
-          <?php endif; ?>
-        </fieldset>
-        <fieldset class="group"><legend>TAMBAH DISPOSISI</legend>
-          <?php $dval = fn(string $k): string => (string) (($dispOld[$k] ?? '') ); ?>
-          <?php $derr = fn(string $k): string => isset($dispErrors[$k]) ? '<div class="ferr">' . e($dispErrors[$k]) . '</div>' : ''; ?>
-          <form method="post" action="/agenda/<?= (int) $editId ?>/disposisi" class="form" novalidate>
-            <?= csrf_field() ?>
-            <div class="field">
-              <label for="d_aktor">Aktor *</label>
-              <input id="d_aktor" name="disposisi_aktor" type="text" maxlength="100"
-                     placeholder="Contoh: Perwira 2" value="<?= e($dval('disposisi_aktor')) ?>" required>
-              <?= $derr('disposisi_aktor') ?>
-            </div>
-            <div class="field">
-              <label for="d_kegiatan">Kegiatan *</label>
-              <input id="d_kegiatan" name="disposisi_kegiatan" type="text" maxlength="200"
-                     placeholder="Contoh: Untuk Ditelaah" value="<?= e($dval('disposisi_kegiatan')) ?>" required>
-              <?= $derr('disposisi_kegiatan') ?>
-            </div>
-            <div class="actions">
-              <button type="submit" class="btn primary">Tambah Disposisi</button>
-            </div>
-          </form>
-        </fieldset>
-        <?php else: ?>
-        <fieldset class="group"><legend>DISPOSISI / CATATAN</legend>
-          <div class="field">
-            <label for="aktor">Aktor *</label>
-            <input id="aktor" name="disposisi_aktor" type="text" maxlength="100"
-                   placeholder="Contoh: Perwira 1" value="<?= e($val('disposisi_aktor')) ?>" required>
-            <?= $ferr('disposisi_aktor') ?>
-          </div>
-          <div class="field">
-            <label for="kegiatan">Kegiatan *</label>
-            <input id="kegiatan" name="disposisi_kegiatan" type="text" maxlength="200"
-                   placeholder="Contoh: Untuk Dipedomani" value="<?= e($val('disposisi_kegiatan')) ?>" required>
-            <?= $ferr('disposisi_kegiatan') ?>
-          </div>
-          <label class="check"><input type="checkbox" name="disposisi_selesai" value="1" <?= ((string) ($val('disposisi_selesai', '0')) === '1') ? 'checked' : '' ?>> Sudah ditindaklanjuti</label>
-        </fieldset>
-        <?php endif; ?>
         <div class="actions">
-          <button type="submit" class="btn primary"><?= $isEdit ? 'Simpan Perubahan' : 'Simpan Surat' ?></button>
-          <?php if (!$isEdit): ?>
-            <button type="reset" class="btn ghost">Reset</button>
-          <?php else: ?>
-            <button type="button" class="btn ghost" onclick="window.location.href='/agenda?arah=<?= e($arah) ?>'">Batal</button>
-          <?php endif; ?>
+          <button type="submit" class="btn primary">Simpan Perubahan</button>
+          <button type="button" class="btn ghost" onclick="window.location.href='/agenda?arah=<?= e($arah) ?>'">Batal</button>
         </div>
       </form>
+      <fieldset class="group"><legend>RIWAYAT DISPOSISI</legend>
+        <?php $riwayat = $riwayat ?? []; ?>
+        <?php if ($riwayat === []): ?>
+          <p class="muted">Belum ada disposisi.</p>
+        <?php else: ?>
+          <?php foreach ($riwayat as $i => $w): ?>
+          <div class="mrow">
+            <span>#<?= $i + 1 ?> · <?= e(substr((string) $w['created_at'], 0, 10)) ?></span>
+            <b class="leader"><span class="ll"><?= e($w['aktor']) ?></span><span class="fill" aria-hidden="true"></span><span class="rl"><?= e($w['kegiatan']) ?></span></b>
+          </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </fieldset>
+      <form method="post" action="/agenda/<?= (int) $editId ?>/disposisi" class="form" novalidate>
+        <fieldset class="group" id="tambah-disposisi"><legend>TAMBAH DISPOSISI</legend>
+          <?php $dval = fn(string $k): string => (string) (($dispOld[$k] ?? '') ); ?>
+          <?php $derr = fn(string $k): string => isset($dispErrors[$k]) ? '<div class="ferr">' . e($dispErrors[$k]) . '</div>' : ''; ?>
+          <?= csrf_field() ?>
+          <div class="field">
+            <label for="d_aktor">Aktor *</label>
+            <input id="d_aktor" name="disposisi_aktor" type="text" maxlength="100"
+                   placeholder="Contoh: Perwira 2" value="<?= e($dval('disposisi_aktor')) ?>" required>
+            <?= $derr('disposisi_aktor') ?>
+          </div>
+          <div class="field">
+            <label for="d_kegiatan">Kegiatan *</label>
+            <input id="d_kegiatan" name="disposisi_kegiatan" type="text" maxlength="200"
+                   placeholder="Contoh: Untuk Ditelaah" value="<?= e($dval('disposisi_kegiatan')) ?>" required>
+            <?= $derr('disposisi_kegiatan') ?>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn primary">Tambah Disposisi</button>
+          </div>
+        </fieldset>
+      </form>
+        <?php else: ?>
+        <p class="muted">Disposisi ditambahkan setelah surat tersimpan, lewat tombol + di tabel.</p>
+        <div class="actions">
+          <button type="submit" class="btn primary">Simpan Surat</button>
+          <button type="reset" class="btn ghost">Reset</button>
+        </div>
+      </form>
+        <?php endif; ?>
     </div>
 
     <div class="agenda-list">
@@ -140,7 +139,7 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
       <form method="get" action="/agenda" class="filter agenda-filter">
         <input type="hidden" name="arah" value="<?= e($arah) ?>">
         <div class="field grow"><label for="aq">Cari (No. Agenda / No. Surat / Kepada / Perihal)</label>
-          <input id="aq" type="search" name="q" value="<?= e($q) ?>" placeholder="Cari No. Surat / Kepada / Perihal..."></div>
+          <input id="aq" type="search" name="q" value="<?= e($q) ?>" placeholder="Cari SMB-1 / No. Surat / Kepada / Perihal..."></div>
         <div class="field"><label for="asub">Sub-Jenis</label>
           <select id="asub" name="sub">
             <option value="">Semua Sub-Jenis</option>
@@ -155,30 +154,29 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
         <table class="tbl">
           <thead><tr>
             <th>No.</th><th>Jenis</th><th>No. Surat</th><th>Kepada</th><th>Perihal</th>
-            <th>Aktor</th><th>Kegiatan</th><th>✓</th><th>Aksi</th>
+            <th>Aktor</th><th>Kegiatan</th><th>Aksi</th>
           </tr></thead>
           <tbody>
           <?php if ($rows === []): ?>
-            <tr><td colspan="9" class="center muted">Data surat <?= e($arah) ?> tidak ditemukan.</td></tr>
+            <tr><td colspan="8" class="center muted">Data surat <?= e($arah) ?> tidak ditemukan.</td></tr>
           <?php else: ?>
             <?php foreach ($rows as $r): ?>
             <?php $sum = $summaries[(int) $r['id']] ?? null; $last = $sum['latest'] ?? null; $cnt = (int) ($sum['count'] ?? 0); ?>
             <tr>
-              <td><?= (int) $r['no_agenda'] ?></td>
+              <td><?= e($fmtNoFn($r)) ?></td>
               <td><?= e($r['sub_jenis']) ?></td>
               <td><?= e($r['no_surat']) ?></td>
               <td><?= e($r['kepada']) ?></td>
               <td class="perihal" title="<?= e($r['perihal']) ?>"><?= e($r['perihal']) ?></td>
               <td><?= $last !== null ? e($last['aktor']) : '<span class="muted">—</span>' ?></td>
               <td><?= $last !== null ? e($last['kegiatan']) : '<span class="muted">—</span>' ?><?php if ($cnt > 1): ?><br><small class="muted"><?= (int) $cnt ?> riwayat</small><?php endif; ?></td>
-              <td class="center"><?= ($last !== null && (int) $last['selesai'] === 1) ? '✓' : '—' ?></td>
               <td class="actions-cell">
                 <a class="btn sm icon" href="/agenda?arah=<?= e($arah) ?>&edit=<?= (int) $r['id'] ?>" title="Edit" aria-label="Edit">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                 </a>
                 <?php if (!empty($appAdmin)): ?>
                   <form class="inline" method="post" action="/agenda/<?= (int) $r['id'] ?>/delete"
-                        onsubmit="return confirm('Hapus agenda #<?= (int) $r['no_agenda'] ?> (<?= e($arah) ?>)?')">
+                        onsubmit="return confirm('Hapus agenda <?= e($fmtNoFn($r)) ?> (<?= e($arah) ?>)?')">
                     <?= csrf_field() ?>
                     <button class="btn sm icon danger" type="submit" title="Hapus" aria-label="Hapus">
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -195,17 +193,17 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
       <?php foreach ($rows as $r): ?>
       <?php $msum = $summaries[(int) $r['id']] ?? null; $mlast = $msum['latest'] ?? null; $mcnt = (int) ($msum['count'] ?? 0); ?>
       <article class="mcard">
-        <div class="mrow"><span>No.</span><b><?= (int) $r['no_agenda'] ?></b></div>
+        <div class="mrow"><span>No.</span><b><?= e($fmtNoFn($r)) ?></b></div>
         <div class="mrow"><span>Jenis</span><b><?= e($r['sub_jenis']) ?></b></div>
         <div class="mrow"><span>No. Surat</span><b><?= e($r['no_surat']) ?></b></div>
         <div class="mrow"><span>Kepada</span><b><?= e($r['kepada']) ?></b></div>
         <div class="mrow"><span>Perihal</span><b><?= e($r['perihal']) ?></b></div>
-        <div class="mrow"><span>Disposisi</span><b><?= $mlast !== null ? e($mlast['aktor']) . ' — ' . e($mlast['kegiatan']) . ' (' . ((int) $mlast['selesai'] === 1 ? '✓' : '—') . ')' : '—' ?><?= $mcnt > 1 ? ' · ' . $mcnt . ' riwayat' : '' ?></b></div>
+        <div class="mrow"><span>Disposisi</span><b<?= $mlast !== null ? ' class="leader"' : '' ?>><?= $mlast !== null ? '<span class="ll">' . e($mlast['aktor']) . '</span><span class="fill" aria-hidden="true"></span><span class="rl">' . e($mlast['kegiatan']) . ($mcnt > 1 ? ' · ' . $mcnt . ' riwayat' : '') . '</span>' : '—' ?></b></div>
         <div class="mact">
           <button class="btn sm" onclick="window.location.href='/agenda?arah=<?= e($arah) ?>&edit=<?= (int) $r['id'] ?>'">Edit</button>
           <?php if (!empty($appAdmin)): ?>
             <form class="inline grow" method="post" action="/agenda/<?= (int) $r['id'] ?>/delete"
-                  onsubmit="return confirm('Hapus agenda #<?= (int) $r['no_agenda'] ?>?')">
+                  onsubmit="return confirm('Hapus agenda <?= e($fmtNoFn($r)) ?>?')">
               <?= csrf_field() ?>
               <button class="btn sm danger" type="submit">Hapus</button>
             </form>
