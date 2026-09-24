@@ -186,7 +186,7 @@ final class AgendaController
         if ($surat === null) {
             throw new \RuntimeException('Data tidak ditemukan.');
         }
-        // Tambah-box hanya mengirim aktor/kegiatan: lengkapi field surat dari DB
+        // Tambah-box hanya mengirim aktor: lengkapi field surat dari DB
         // agar form utama tetap terisi bila validasi disposisi gagal.
         foreach (['arah', 'sub_jenis', 'no_surat', 'tanggal', 'kepada', 'perihal'] as $k) {
             if (!isset($input[$k])) {
@@ -210,5 +210,19 @@ final class AgendaController
             $input['__disp_errors'] = ['form' => 'Disposisi gagal ditambahkan. Silakan coba kembali.'];
             return ['errors' => ['form' => 'Disposisi gagal ditambahkan. Silakan coba kembali.'], 'old' => $input];
         }
+    }
+
+    /** Balik ceklis entry terakhir surat. Kembalikan agenda pemilik untuk redirect. */
+    public static function toggleDisposisi(PDO $pdo, int $dispId, ?string $csrf): array
+    {
+        if (!csrf_verify($csrf)) {
+            throw new \RuntimeException('Sesi kedaluwarsa.');
+        }
+        $row = AgendaDisposisi::toggle($pdo, $dispId);
+        $surat = Agenda::find($pdo, (int) $row['agenda_id']);
+        if ($surat === null) {
+            throw new \RuntimeException('Data tidak ditemukan.');
+        }
+        return ['agenda_id' => (int) $row['agenda_id'], 'arah' => Agenda::normalizeArah($surat['arah'])];
     }
 }

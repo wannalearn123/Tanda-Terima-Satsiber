@@ -308,6 +308,23 @@ if (preg_match('#^/agenda/(\d+)/disposisi$#', $path, $m) && $method === 'POST') 
     exit;
 }
 
+if (preg_match('#^/agenda/disposisi/(\d+)/toggle$#', $path, $m) && $method === 'POST') {
+    try {
+        $res = AgendaController::toggleDisposisi($pdo, (int) $m[1], $_POST['_csrf'] ?? null);
+        flash('success', 'Status disposisi diperbarui.');
+        redirect('/agenda?arah=' . urlencode((string) ($res['arah'] ?? 'masuk')) . '&edit=' . $res['agenda_id']);
+    } catch (RuntimeException $e) {
+        $msg = $e->getMessage();
+        if (str_contains($msg, 'Sesi')) {
+            flash('error', 'Sesi kedaluwarsa.');
+            redirect('/agenda');
+        }
+        http_response_code(404);
+        echo 'Data tidak ditemukan.';
+        exit;
+    }
+}
+
 if (preg_match('#^/agenda/(\d+)/delete$#', $path, $m) && $method === 'POST') {
     require_admin();
     if (!csrf_verify($_POST['_csrf'] ?? null)) {

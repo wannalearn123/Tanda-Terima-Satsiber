@@ -31,21 +31,46 @@ final class AgendaDisposisi
     public static function create(PDO $pdo, int $agendaId, array $d): int
     {
         $st = $pdo->prepare(
-            'INSERT INTO agenda_disposisi (agenda_id, aktor, kegiatan, created_at, updated_at)
-             VALUES (:aid, :aktor, :kegiatan, :now, :now)'
+            'INSERT INTO agenda_disposisi (agenda_id, aktor, selesai, created_at, updated_at)
+             VALUES (:aid, :aktor, :selesai, :now, :now)'
         );
         $st->execute([
             ':aid' => $agendaId,
             ':aktor' => $d['disposisi_aktor'],
-            ':kegiatan' => $d['disposisi_kegiatan'],
+            ':selesai' => $d['disposisi_selesai'] ?? 0,
             ':now' => $d['now'],
         ]);
         return (int) $pdo->lastInsertId();
     }
 
+    /** Balik ceklis 0/1 satu entry. Kembalikan baris sesudah toggle. */
+    public static function toggle(PDO $pdo, int $id): array
+    {
+        $pdo->beginTransaction();
+        try {
+            $row = self::find($pdo, $id);
+            if ($row === null) {
+                throw new \RuntimeException('Disposisi tidak ditemukan.');
+            }
+            $st = $pdo->prepare(
+                'UPDATE agenda_disposisi SET selesai = 1 - selesai, updated_at = :now WHERE id = :id'
+            );
+            $st->execute([':now' => date('Y-m-d H:i:s'), ':id' => $id]);
+            $pdo->commit();
+            $updated = self::find($pdo, $id);
+            \assert($updated !== null);
+            return $updated;
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     /**
      * Ringkasan untuk banyak surat sekaligus (hindari N+1):
-     * [agenda_id => ['latest' => row, 'count' => n]].
+     * [agenda_id => ['latest' => row, 'count' => n, 'actors' => [nama], 'entries' => [row kronologis]]].
      */
     public static function summaryForMany(PDO $pdo, array $ids): array
     {
@@ -62,10 +87,12 @@ final class AgendaDisposisi
         foreach ($st->fetchAll() as $r) {
             $aid = (int) $r['agenda_id'];
             if (!isset($out[$aid])) {
-                $out[$aid] = ['latest' => $r, 'count' => 0];
+                $out[$aid] = ['latest' => $r, 'count' => 0, 'actors' => [], 'entries' => []];
             }
             $out[$aid]['latest'] = $r;
             $out[$aid]['count']++;
+            $out[$aid]['actors'][] = (string) ($r['aktor'] ?? '');
+            $out[$aid]['entries'][] = $r;
         }
         return $out;
     }

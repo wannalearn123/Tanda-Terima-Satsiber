@@ -122,7 +122,7 @@ final class Validator
      * No. Agenda TIDAK diinput user: otomatis MAX+1 per grup (arah + sub_jenis)
      * saat create, dikunci saat update. Arah dan sub_jenis juga dikunci saat
      * update (surat yang sudah masuk tidak bisa ganti jenis).
-     * Aturan case: arah lower, no_surat UPPER, kepada/aktor/kegiatan Title Case,
+     * Aturan case: arah lower, no_surat UPPER, kepada/aktor Title Case,
      * perihal trim+collapse (huruf pertama kapital).
      *
      * @return array{0: array<string,string>, 1: array<string,mixed>}
@@ -193,7 +193,7 @@ final class Validator
     }
 
     /**
-     * Validasi satu entry disposisi. Standardisasi Title Case.
+     * Validasi satu entry disposisi: hanya aktor + ceklis opsional.
      *
      * @return array{0: array<string,string>, 1: array<string,mixed>}
      */
@@ -207,15 +207,11 @@ final class Validator
             $errors['disposisi_aktor'] = 'Aktor disposisi wajib diisi (contoh: Perwira 1).';
         }
 
-        $kegiatan = self::toTitle((string) ($input['disposisi_kegiatan'] ?? ''));
-        $kegiatan = mb_substr($kegiatan, 0, 200);
-        if ($kegiatan === '') {
-            $errors['disposisi_kegiatan'] = 'Kegiatan disposisi wajib diisi (contoh: Untuk Dipedomani).';
-        }
+        $selesai = (isset($input['disposisi_selesai']) && (string) $input['disposisi_selesai'] === '1') ? 1 : 0;
 
         return [$errors, [
             'disposisi_aktor' => $aktor,
-            'disposisi_kegiatan' => $kegiatan,
+            'disposisi_selesai' => $selesai,
             'now' => date('Y-m-d H:i:s'),
         ]];
     }

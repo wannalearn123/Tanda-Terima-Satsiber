@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS agenda_disposisi (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     agenda_id INTEGER NOT NULL REFERENCES agenda_surat(id) ON DELETE CASCADE,
     aktor TEXT NOT NULL,
-    kegiatan TEXT NOT NULL,
+    selesai INTEGER NOT NULL DEFAULT 0 CHECK(selesai IN (0,1)),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );

@@ -20,7 +20,7 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
   <h1 class="title">AGENDA SURAT</h1>
   <div class="agenda-grid">
     <div class="agenda-form">
-      <h2 class="sub"><?= $isEdit ? 'Ubah Surat ' . e((string) $editNoFmt) : 'Input Surat Baru' ?></h2>
+      <h2 class="sub"><?= $isEdit ? 'Edit Surat ' . e((string) $editNoFmt) : 'Input Surat Baru' ?></h2>
       <form method="post" action="<?= $isEdit ? '/agenda/' . (int) $editId . '/update' : '/agenda' ?>" class="form" novalidate>
         <?= csrf_field() ?>
         <?php if ($isEdit): ?>
@@ -86,19 +86,6 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
           <button type="button" class="btn ghost" onclick="window.location.href='/agenda?arah=<?= e($arah) ?>'">Batal</button>
         </div>
       </form>
-      <fieldset class="group"><legend>RIWAYAT DISPOSISI</legend>
-        <?php $riwayat = $riwayat ?? []; ?>
-        <?php if ($riwayat === []): ?>
-          <p class="muted">Belum ada disposisi.</p>
-        <?php else: ?>
-          <?php foreach ($riwayat as $i => $w): ?>
-          <div class="mrow">
-            <span>#<?= $i + 1 ?> · <?= e(substr((string) $w['created_at'], 0, 10)) ?></span>
-            <b class="leader"><span class="ll"><?= e($w['aktor']) ?></span><span class="fill" aria-hidden="true"></span><span class="rl"><?= e($w['kegiatan']) ?></span></b>
-          </div>
-          <?php endforeach; ?>
-        <?php endif; ?>
-      </fieldset>
       <form method="post" action="/agenda/<?= (int) $editId ?>/disposisi" class="form" novalidate>
         <fieldset class="group" id="tambah-disposisi"><legend>TAMBAH DISPOSISI</legend>
           <?php $dval = fn(string $k): string => (string) (($dispOld[$k] ?? '') ); ?>
@@ -110,19 +97,13 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
                    placeholder="Contoh: Perwira 2" value="<?= e($dval('disposisi_aktor')) ?>" required>
             <?= $derr('disposisi_aktor') ?>
           </div>
-          <div class="field">
-            <label for="d_kegiatan">Kegiatan *</label>
-            <input id="d_kegiatan" name="disposisi_kegiatan" type="text" maxlength="200"
-                   placeholder="Contoh: Untuk Ditelaah" value="<?= e($dval('disposisi_kegiatan')) ?>" required>
-            <?= $derr('disposisi_kegiatan') ?>
-          </div>
+          <label class="check"><input type="checkbox" name="disposisi_selesai" value="1" <?= ((string) ($dval('disposisi_selesai') ?: '0') === '1') ? 'checked' : '' ?>> Sudah ditindaklanjuti</label>
           <div class="actions">
             <button type="submit" class="btn primary">Tambah Disposisi</button>
           </div>
         </fieldset>
       </form>
         <?php else: ?>
-        <p class="muted">Disposisi ditambahkan setelah surat tersimpan, lewat tombol + di tabel.</p>
         <div class="actions">
           <button type="submit" class="btn primary">Simpan Surat</button>
           <button type="reset" class="btn ghost">Reset</button>
@@ -154,22 +135,28 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
         <table class="tbl">
           <thead><tr>
             <th>No.</th><th>Jenis</th><th>No. Surat</th><th>Kepada</th><th>Perihal</th>
-            <th>Aktor</th><th>Kegiatan</th><th>Aksi</th>
+            <th>Disposisi</th><th>Aksi</th>
           </tr></thead>
           <tbody>
           <?php if ($rows === []): ?>
-            <tr><td colspan="8" class="center muted">Data surat <?= e($arah) ?> tidak ditemukan.</td></tr>
+            <tr><td colspan="7" class="center muted">Data surat <?= e($arah) ?> tidak ditemukan.</td></tr>
           <?php else: ?>
             <?php foreach ($rows as $r): ?>
-            <?php $sum = $summaries[(int) $r['id']] ?? null; $last = $sum['latest'] ?? null; $cnt = (int) ($sum['count'] ?? 0); ?>
+            <?php $sum = $summaries[(int) $r['id']] ?? null; $entries = $sum['entries'] ?? []; ?>
             <tr>
               <td><?= e($fmtNoFn($r)) ?></td>
               <td><?= e($r['sub_jenis']) ?></td>
               <td><?= e($r['no_surat']) ?></td>
               <td><?= e($r['kepada']) ?></td>
               <td class="perihal" title="<?= e($r['perihal']) ?>"><?= e($r['perihal']) ?></td>
-              <td><?= $last !== null ? e($last['aktor']) : '<span class="muted">—</span>' ?></td>
-              <td><?= $last !== null ? e($last['kegiatan']) : '<span class="muted">—</span>' ?><?php if ($cnt > 1): ?><br><small class="muted"><?= (int) $cnt ?> riwayat</small><?php endif; ?></td>
+              <td class="disp"><?php if ($entries === []): ?><span class="muted">—</span><?php else: ?>
+                <?php foreach ($entries as $en): ?>
+                <form class="inline" method="post" action="/agenda/disposisi/<?= (int) $en['id'] ?>/toggle" title="Ubah status <?= e($en['aktor']) ?>">
+                  <?= csrf_field() ?>
+                  <label class="check"><input type="checkbox" value="1" <?= ((int) $en['selesai'] === 1) ? 'checked' : '' ?> onchange="this.form.submit()" aria-label="Tandai <?= e($en['aktor']) ?> selesai"> <?= e($en['aktor']) ?></label>
+                </form>
+                <?php endforeach; ?>
+              <?php endif; ?></td>
               <td class="actions-cell">
                 <a class="btn sm icon" href="/agenda?arah=<?= e($arah) ?>&edit=<?= (int) $r['id'] ?>" title="Edit" aria-label="Edit">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
@@ -191,14 +178,21 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
         </table>
       </div>
       <?php foreach ($rows as $r): ?>
-      <?php $msum = $summaries[(int) $r['id']] ?? null; $mlast = $msum['latest'] ?? null; $mcnt = (int) ($msum['count'] ?? 0); ?>
+      <?php $msum = $summaries[(int) $r['id']] ?? null; $mentries = $msum['entries'] ?? []; ?>
       <article class="mcard">
         <div class="mrow"><span>No.</span><b><?= e($fmtNoFn($r)) ?></b></div>
         <div class="mrow"><span>Jenis</span><b><?= e($r['sub_jenis']) ?></b></div>
         <div class="mrow"><span>No. Surat</span><b><?= e($r['no_surat']) ?></b></div>
         <div class="mrow"><span>Kepada</span><b><?= e($r['kepada']) ?></b></div>
         <div class="mrow"><span>Perihal</span><b><?= e($r['perihal']) ?></b></div>
-        <div class="mrow"><span>Disposisi</span><b<?= $mlast !== null ? ' class="leader"' : '' ?>><?= $mlast !== null ? '<span class="ll">' . e($mlast['aktor']) . '</span><span class="fill" aria-hidden="true"></span><span class="rl">' . e($mlast['kegiatan']) . ($mcnt > 1 ? ' · ' . $mcnt . ' riwayat' : '') . '</span>' : '—' ?></b></div>
+        <div class="mrow"><span>Disposisi</span><b><?php if ($mentries === []): ?>—<?php else: ?>
+          <?php foreach ($mentries as $men): ?>
+          <form class="inline" method="post" action="/agenda/disposisi/<?= (int) $men['id'] ?>/toggle">
+            <?= csrf_field() ?>
+            <label class="check"><input type="checkbox" value="1" <?= ((int) $men['selesai'] === 1) ? 'checked' : '' ?> onchange="this.form.submit()" aria-label="Tandai <?= e($men['aktor']) ?> selesai"> <?= e($men['aktor']) ?></label>
+          </form>
+          <?php endforeach; ?>
+        <?php endif; ?></b></div>
         <div class="mact">
           <button class="btn sm" onclick="window.location.href='/agenda?arah=<?= e($arah) ?>&edit=<?= (int) $r['id'] ?>'">Edit</button>
           <?php if (!empty($appAdmin)): ?>
