@@ -9,7 +9,7 @@ use PDO;
 
 final class AuthController
 {
-    /** User login saat ini (dimuat fresh dari DB tiap request) atau null. */
+    /** User login saat ini atau null. */
     public static function current(PDO $pdo): ?array
     {
         ensure_session();

@@ -12,19 +12,29 @@ final class Agenda
     public const ARAH_KELUAR = 'keluar';
 
     /**
-     * Daftar jenis surat dari tabel master agenda_sub_jenis.
-     * Satu tabel untuk dua arah; flag tampil_masuk / tampil_keluar = yes/no per baris.
-     *
-     * @return string[]
+     * Seluruh master jenis surat dalam 1 query.
+     * @return array<int, array<string,mixed>>
      */
-    public static function subJenisFor(PDO $pdo, string $arah): array
+    public static function masterJenis(PDO $pdo): array
+    {
+        $st = $pdo->query(
+            'SELECT nama, tampil_masuk, tampil_keluar, kode_masuk, kode_keluar
+             FROM agenda_sub_jenis ORDER BY urutan ASC, nama ASC'
+        );
+        return $st->fetchAll();
+    }
+
+    /** Nama jenis untuk satu arah dari hasil masterJenis(). @return string[] */
+    public static function subNames(array $master, string $arah): array
     {
         $col = $arah === self::ARAH_KELUAR ? 'tampil_keluar' : 'tampil_masuk';
-        $st = $pdo->prepare(
-            "SELECT nama FROM agenda_sub_jenis WHERE $col = 1 ORDER BY urutan ASC, nama ASC"
-        );
-        $st->execute();
-        return array_column($st->fetchAll(), 'nama');
+        $out = [];
+        foreach ($master as $r) {
+            if ((int) ($r[$col] ?? 0) === 1) {
+                $out[] = (string) $r['nama'];
+            }
+        }
+        return $out;
     }
 
     public static function isValidSubJenis(PDO $pdo, string $arah, string $nama): bool
@@ -37,15 +47,17 @@ final class Agenda
         return $st->fetch() !== false;
     }
 
-    /**
-     * Kode nomor per grup (arah + sub-jenis), mis. masuk+Biasa=SMB, keluar+Rahasia=SKR.
-     * @return array{masuk: array<string,string>, keluar: array<string,string>} [arah => [nama => kode]]
-     */
+    /** Kode nomor per grup (arah + sub-jenis), mis. masuk+Biasa=SMB. @return array{masuk: array<string,string>, keluar: array<string,string>} */
     public static function kodeMap(PDO $pdo): array
     {
+        return self::kodeMapFrom(self::masterJenis($pdo));
+    }
+
+    /** Turunan kodeMap() dari hasil masterJenis() (tanpa query). @return array{masuk: array<string,string>, keluar: array<string,string>} */
+    public static function kodeMapFrom(array $master): array
+    {
         $map = ['masuk' => [], 'keluar' => []];
-        $st = $pdo->query('SELECT nama, kode_masuk, kode_keluar FROM agenda_sub_jenis');
-        foreach ($st->fetchAll() as $r) {
+        foreach ($master as $r) {
             $nama = (string) ($r['nama'] ?? '');
             if ($nama === '') {
                 continue;
@@ -62,12 +74,20 @@ final class Agenda
 
     public static function kodeFor(PDO $pdo, string $arah, string $subJenis): string
     {
+        return self::kodeFrom(self::masterJenis($pdo), $arah, $subJenis);
+    }
+
+    /** Turunan kodeFor() dari hasil masterJenis() (tanpa query). */
+    public static function kodeFrom(array $master, string $arah, string $subJenis): string
+    {
         $col = $arah === self::ARAH_KELUAR ? 'kode_keluar' : 'kode_masuk';
-        $st = $pdo->prepare("SELECT $col FROM agenda_sub_jenis WHERE nama = :nama LIMIT 1");
-        $st->execute([':nama' => $subJenis]);
-        $row = $st->fetch();
-        $kode = $row !== false ? (string) ($row[$col] ?? '') : '';
-        return $kode !== '' ? $kode : ($arah === self::ARAH_KELUAR ? 'SK' : 'SM');
+        foreach ($master as $r) {
+            if ((string) ($r['nama'] ?? '') === $subJenis) {
+                $kode = (string) ($r[$col] ?? '');
+                return $kode !== '' ? $kode : ($arah === self::ARAH_KELUAR ? 'SK' : 'SM');
+            }
+        }
+        return $arah === self::ARAH_KELUAR ? 'SK' : 'SM';
     }
 
     /** Format tampil: "SMB-1". */
@@ -93,10 +113,7 @@ final class Agenda
     }
 
     /**
-     * Buat surat dalam satu transaksi (tanpa entry disposisi awal;
-     * disposisi ditambahkan belakangan lewat tabel).
-     * Nomor berikutnya per grup (arah + sub-jenis): MAX+1, gap tidak dipakai ulang.
-     *
+     * Buat surat (nomor MAX+1 per grup, gap tidak dipakai ulang).
      * @return array{id: int, no_agenda: int, kode: string}
      */
     public static function create(PDO $pdo, array $d): array
@@ -137,11 +154,8 @@ final class Agenda
         throw $last;
     }
 
-    /**
-     * Update field isi saja. Arah, sub-jenis, dan no_agenda dikunci setelah dibuat
-     * (validasi menolak perubahan arah/sub_jenis).
-     */
-    public static function update(PDO $pdo, int $id, array $d): bool
+    /** Update field isi saja. Arah, sub-jenis, dan no_agenda dikunci. */
+    public static function update(PDO $pdo, int $id, array $d): void
     {
         $pdo->beginTransaction();
         try {
@@ -160,7 +174,6 @@ final class Agenda
                 ':id' => $id,
             ]);
             $pdo->commit();
-            return $st->rowCount() >= 0;
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -177,7 +190,7 @@ final class Agenda
         return $row === false ? null : $row;
     }
 
-    /** Hapus surat + seluruh rantai disposisinya (eksplisit + CASCADE sebagai jaring pengaman). */
+    /** Hapus surat + disposisinya. */
     public static function destroy(PDO $pdo, int $id): void
     {
         $pdo->beginTransaction();
@@ -198,19 +211,6 @@ final class Agenda
         }
     }
 
-    public static function existsNoAgenda(PDO $pdo, string $arah, string $subJenis, int $noAgenda, ?int $excludeId = null): bool
-    {
-        $sql = 'SELECT 1 FROM agenda_surat WHERE arah = :arah AND sub_jenis = :sub AND no_agenda = :no LIMIT 1';
-        $params = [':arah' => $arah, ':sub' => $subJenis, ':no' => $noAgenda];
-        if ($excludeId !== null) {
-            $sql = 'SELECT 1 FROM agenda_surat WHERE arah = :arah AND sub_jenis = :sub AND no_agenda = :no AND id != :id LIMIT 1';
-            $params[':id'] = $excludeId;
-        }
-        $st = $pdo->prepare($sql);
-        $st->execute($params);
-        return $st->fetch() !== false;
-    }
-
     /** @return array{masuk: int, keluar: int} */
     public static function countByArah(PDO $pdo): array
     {
@@ -226,9 +226,10 @@ final class Agenda
     }
 
     /**
+     * @param array{masuk: array<string,string>, keluar: array<string,string>}|null $kodeMap peta siap pakai (hindari query ulang)
      * @return array{rows: array, total: int, page: int, pages: int}
      */
-    public static function paginate(PDO $pdo, string $arah, ?string $sub, ?string $q, int $page, int $perPage): array
+    public static function paginate(PDO $pdo, string $arah, ?string $sub, ?string $q, int $page, int $perPage, ?array $kodeMap = null): array
     {
         $where = ['a.arah = :arah'];
         $params = [':arah' => $arah];
@@ -244,7 +245,7 @@ final class Agenda
                 $num = ltrim($m[2], '0');
                 $num = $num === '' ? null : $num;
                 $found = null;
-                foreach (self::kodeMap($pdo) as $ka => $pairs) {
+                foreach (($kodeMap ?? self::kodeMap($pdo)) as $ka => $pairs) {
                     foreach ($pairs as $nama => $kk) {
                         if (strtoupper($kk) === $kode) {
                             $found = ['arah' => $ka, 'sub' => $nama];

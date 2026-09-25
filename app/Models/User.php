@@ -24,7 +24,7 @@ final class User
         return $row === false ? null : $row;
     }
 
-    /** @return array semua user untuk halaman admin */
+    /** @return array daftar user untuk halaman admin */
     public static function all(PDO $pdo): array
     {
         return $pdo->query("SELECT id, username, nama, role, aktif, created_at FROM users ORDER BY id ASC")->fetchAll();

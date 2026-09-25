@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// Front-controller tunggal. Seluruh request (pretty URL maupun built-in server) masuk ke sini.
+// Front-controller tunggal.
 
 $root = dirname(__DIR__);
 require $root . '/app/Config/Config.php';
@@ -15,11 +15,12 @@ use App\Controllers\DashboardController;
 use App\Controllers\FormController;
 use App\Controllers\PengirimanController;
 use App\Database\Connection;
+use App\Models\Agenda;
+use App\Models\Pengiriman;
 use App\Models\User;
 use App\Services\TandaTangan;
 
-// Autoload PSR-4 untuk App\ + library vendor yang dipasang manual tanpa Composer
-// (lihat README: composer install menghasilkan vendor/autoload.php bila tersedia).
+// Autoload PSR-4 untuk App\ + library vendor tanpa Composer.
 $vendorPsr4 = [
     'Dompdf\\' => $root . '/vendor/dompdf/dompdf/src/',
     'FontLib\\' => $root . '/vendor/dompdf/php-font-lib/src/FontLib/',
@@ -57,7 +58,7 @@ if (is_file($autoload)) {
     require $autoload;
 }
 
-// Error handling: production sembunyikan detail, tulis ke storage/logs/.
+// Production: sembunyikan detail error, tulis ke storage/logs/.
 if (!Config::isDev()) {
     ini_set('display_errors', '0');
     ini_set('log_errors', '1');
@@ -68,7 +69,7 @@ if (!Config::isDev()) {
     ini_set('error_log', $logDir . '/php.log');
 }
 
-// Header keamanan HTTP (defense-in-depth; php -S tidak pakai .htaccess).
+// Header keamanan HTTP (php -S tidak pakai .htaccess).
 if (PHP_SAPI !== 'cli' && !headers_sent()) {
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
@@ -161,7 +162,7 @@ function validate_new_user(PDO $pdo, array $in): array
     $role = (string) ($in['role'] ?? 'operator');
     if (!preg_match('/^[a-z0-9._]{3,30}$/', $username)) {
         $errors[] = 'Username 3–30 karakter (huruf kecil, angka, titik, underscore).';
-    } elseif (App\Models\User::findByUsername($pdo, $username) !== null) {
+    } elseif (User::findByUsername($pdo, $username) !== null) {
         $errors[] = 'Username sudah dipakai.';
     }
     if ($nama === '') {
@@ -303,17 +304,31 @@ if (preg_match('#^/agenda/(\d+)/disposisi$#', $path, $m) && $method === 'POST') 
         redirect('/agenda?arah=' . urlencode((string) ($res['arah'] ?? 'masuk')) . '&edit=' . $res['agenda_id']);
     }
     $q = $_GET;
-    $q['arah'] = \App\Models\Agenda::normalizeArah($_POST['arah'] ?? 'masuk');
+    $q['arah'] = Agenda::normalizeArah($_POST['arah'] ?? 'masuk');
     render('agenda', AgendaController::index($pdo, $q, $res['old'], $res['errors']), 'Agenda Surat', 'agenda');
     exit;
 }
 
 if (preg_match('#^/agenda/disposisi/(\d+)/toggle$#', $path, $m) && $method === 'POST') {
+    // AJAX (fetch) -> JSON tanpa reload; form biasa -> flash + redirect.
+    $wantJson = str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')
+        || ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
     try {
         $res = AgendaController::toggleDisposisi($pdo, (int) $m[1], $_POST['_csrf'] ?? null);
+        if ($wantJson) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => true, 'selesai' => $res['selesai']]);
+            exit;
+        }
         flash('success', 'Status disposisi diperbarui.');
         redirect('/agenda?arah=' . urlencode((string) ($res['arah'] ?? 'masuk')) . '&edit=' . $res['agenda_id']);
     } catch (RuntimeException $e) {
+        if ($wantJson) {
+            http_response_code(str_contains($e->getMessage(), 'Sesi') ? 403 : 404);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+            exit;
+        }
         $msg = $e->getMessage();
         if (str_contains($msg, 'Sesi')) {
             flash('error', 'Sesi kedaluwarsa.');
@@ -332,14 +347,14 @@ if (preg_match('#^/agenda/(\d+)/delete$#', $path, $m) && $method === 'POST') {
         redirect('/agenda');
     }
     try {
-        $row = \App\Models\Agenda::find($pdo, (int) $m[1]);
+        $row = Agenda::find($pdo, (int) $m[1]);
         $label = $row !== null
-            ? \App\Models\Agenda::formatNo(
-                \App\Models\Agenda::kodeFor($pdo, (string) $row['arah'], (string) $row['sub_jenis']),
+            ? Agenda::formatNo(
+                Agenda::kodeFor($pdo, (string) $row['arah'], (string) $row['sub_jenis']),
                 (int) $row['no_agenda']
             )
             : '#' . $m[1];
-        \App\Models\Agenda::destroy($pdo, (int) $m[1]);
+        Agenda::destroy($pdo, (int) $m[1]);
         flash('success', 'Data agenda ' . $label . ' dihapus.');
     } catch (\Throwable $e) {
         app_log('Agenda delete gagal id=' . $m[1] . ': ' . $e->getMessage());
@@ -367,9 +382,7 @@ if (preg_match('#^/pengiriman/(\d+)/edit$#', $path, $m) && $method === 'GET') {
         exit;
     }
     render('form', [
-        'preset' => $d['preset'],
         'old' => [
-            'preset_penerima_id' => $d['row']['preset_penerima_id'],
             'nomor_referensi' => $d['row']['nomor_referensi'],
             'nama_penerima' => $d['row']['nama_penerima'],
             'pangkat_golongan' => $d['row']['pangkat_golongan'],
@@ -400,7 +413,6 @@ if (preg_match('#^/pengiriman/(\d+)/update$#', $path, $m) && $method === 'POST')
     }
     $d = PengirimanController::edit($pdo, $id);
     render('form', [
-        'preset' => $d['preset'],
         'old' => $res['old'],
         'errors' => $res['errors'],
         'isEdit' => true,
@@ -430,8 +442,8 @@ if (preg_match('#^/pengiriman/(\d+)/delete$#', $path, $m) && $method === 'POST')
         redirect('/dashboard');
     }
     try {
-        $oldTtd = \App\Models\Pengiriman::destroy($pdo, (int) $m[1]);
-        TandaTangan::delete($oldTtd); // file dihapus hanya bila DB sukses
+        $oldTtd = Pengiriman::destroy($pdo, (int) $m[1]);
+        TandaTangan::delete($oldTtd);
         flash('success', 'Data #' . $m[1] . ' dihapus.');
     } catch (\Throwable $e) {
         app_log('Delete gagal id=' . $m[1] . ': ' . $e->getMessage());
@@ -444,7 +456,6 @@ if (preg_match('#^/pengiriman/(\d+)/pdf$#', $path, $m) && $method === 'GET') {
     try {
         PengirimanController::pdf($pdo, (int) $m[1]); // exit di dalam
     } catch (Throwable $e) {
-        // Data DB tidak hilang bila PDF gagal; user bisa generate ulang dari dashboard.
         app_log('PDF gagal id=' . $m[1] . ': ' . $e->getMessage());
         flash('error', 'PDF gagal dibuat: ' . $e->getMessage() . ' Data tetap tersimpan, silakan coba lagi dari dashboard.');
         redirect('/dashboard');

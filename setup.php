@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-// Inisialisasi database fresh deployment. Jalankan dari root proyek:
-//   php setup.php
-// CLI only. Membuat database/database.sqlite + tabel + index + seed.
+// Inisialisasi database fresh. CLI only: php setup.php
 
 if (PHP_SAPI !== 'cli') {
     http_response_code(403);
@@ -60,7 +58,7 @@ foreach ([
     $pdo->exec($sql);
 }
 
-// --- Agenda surat (dikelompokkan per arah + sub-jenis; nomor MAX+1 per grup) ---
+// --- Agenda surat (nomor MAX+1 per grup arah + sub-jenis) ---
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS agenda_surat (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,7 +84,7 @@ foreach ([
     $pdo->exec($sql);
 }
 
-// --- Master jenis surat Agenda (satu tabel, flag tampil + kode nomor per arah) ---
+// --- Master jenis surat Agenda ---
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS agenda_sub_jenis (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,7 +119,7 @@ foreach ($seedJenis as [$nama, $m, $k, $km, $kk, $u]) {
     $stJenis->execute([':nama' => $nama, ':m' => $m, ':k' => $k, ':km' => $km, ':kk' => $kk, ':u' => $u, ':t' => $now]);
 }
 
-// --- Riwayat disposisi Agenda (satu surat -> banyak entry kronologis) ---
+// --- Disposisi Agenda (satu surat -> banyak entry) ---
 $pdo->exec(
     "CREATE TABLE IF NOT EXISTS agenda_disposisi (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

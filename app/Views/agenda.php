@@ -1,9 +1,8 @@
 <?php
-// Variabel: $arah, $subList, $subMasuk, $subKeluar, $formSubList, $sub, $q, $rows, $total, $page, $pages, $counts, $form, $errors, $isEdit, $editId, $editNoAgenda, $editNoFmt, $riwayat, $dispErrors, $dispOld, $summaries, $kodeMap, $fmtNo
+// Variabel: $arah, $subList, $subMasuk, $subKeluar, $formSubList, $sub, $q, $rows, $total, $page, $pages, $counts, $form, $errors, $isEdit, $editId, $editNoFmt, $dispErrors, $dispOld, $summaries, $fmtNo
 $val = fn(string $k, string $d = ''): string => (string) ($form[$k] ?? $d);
 $ferr = fn(string $k): string => isset($errors[$k]) ? '<div class="ferr">' . e($errors[$k]) . '</div>' : '';
 $fmtNoFn = $fmtNo ?? (fn(array $r): string => (string) ((int) ($r['no_agenda'] ?? 0)));
-$editNoFmt = $editNoFmt ?? ($editNoAgenda !== null ? (string) $editNoAgenda : null);
 $formArah = strtolower((string) ($form['arah'] ?? $arah));
 if (!in_array($formArah, ['masuk', 'keluar'], true)) { $formArah = $arah; }
 $formSubList = $formSubList ?? $subList ?? [];
@@ -57,7 +56,6 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
           <?= $ferr('sub_jenis') ?>
         </div>
         <?php endif; ?>
-        <?= $ferr('sub_jenis') ?>
         <div class="field">
           <label for="tanggal">Tanggal *</label>
           <input id="tanggal" name="tanggal" type="date" value="<?= e($val('tanggal')) ?>" required>
@@ -88,7 +86,7 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
       </form>
       <form method="post" action="/agenda/<?= (int) $editId ?>/disposisi" class="form" novalidate>
         <fieldset class="group" id="tambah-disposisi"><legend>TAMBAH DISPOSISI</legend>
-          <?php $dval = fn(string $k): string => (string) (($dispOld[$k] ?? '') ); ?>
+          <?php $dval = fn(string $k): string => (string) ($dispOld[$k] ?? ''); ?>
           <?php $derr = fn(string $k): string => isset($dispErrors[$k]) ? '<div class="ferr">' . e($dispErrors[$k]) . '</div>' : ''; ?>
           <?= csrf_field() ?>
           <div class="field">
@@ -142,7 +140,7 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
             <tr><td colspan="7" class="center muted">Data surat <?= e($arah) ?> tidak ditemukan.</td></tr>
           <?php else: ?>
             <?php foreach ($rows as $r): ?>
-            <?php $sum = $summaries[(int) $r['id']] ?? null; $entries = $sum['entries'] ?? []; ?>
+            <?php $entries = $summaries[(int) $r['id']] ?? []; ?>
             <tr>
               <td><?= e($fmtNoFn($r)) ?></td>
               <td><?= e($r['sub_jenis']) ?></td>
@@ -153,7 +151,7 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
                 <?php foreach ($entries as $en): ?>
                 <form class="inline" method="post" action="/agenda/disposisi/<?= (int) $en['id'] ?>/toggle" title="Ubah status <?= e($en['aktor']) ?>">
                   <?= csrf_field() ?>
-                  <label class="check"><input type="checkbox" value="1" <?= ((int) $en['selesai'] === 1) ? 'checked' : '' ?> onchange="this.form.submit()" aria-label="Tandai <?= e($en['aktor']) ?> selesai"> <?= e($en['aktor']) ?></label>
+                  <label class="check"><input type="checkbox" value="1" <?= ((int) $en['selesai'] === 1) ? 'checked' : '' ?> onchange="this.form.requestSubmit()" aria-label="Tandai <?= e($en['aktor']) ?> selesai"> <?= e($en['aktor']) ?></label>
                 </form>
                 <?php endforeach; ?>
               <?php endif; ?></td>
@@ -178,7 +176,7 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
         </table>
       </div>
       <?php foreach ($rows as $r): ?>
-      <?php $msum = $summaries[(int) $r['id']] ?? null; $mentries = $msum['entries'] ?? []; ?>
+      <?php $mentries = $summaries[(int) $r['id']] ?? []; ?>
       <article class="mcard">
         <div class="mrow"><span>No.</span><b><?= e($fmtNoFn($r)) ?></b></div>
         <div class="mrow"><span>Jenis</span><b><?= e($r['sub_jenis']) ?></b></div>
@@ -189,7 +187,7 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
           <?php foreach ($mentries as $men): ?>
           <form class="inline" method="post" action="/agenda/disposisi/<?= (int) $men['id'] ?>/toggle">
             <?= csrf_field() ?>
-            <label class="check"><input type="checkbox" value="1" <?= ((int) $men['selesai'] === 1) ? 'checked' : '' ?> onchange="this.form.submit()" aria-label="Tandai <?= e($men['aktor']) ?> selesai"> <?= e($men['aktor']) ?></label>
+            <label class="check"><input type="checkbox" value="1" <?= ((int) $men['selesai'] === 1) ? 'checked' : '' ?> onchange="this.form.requestSubmit()" aria-label="Tandai <?= e($men['aktor']) ?> selesai"> <?= e($men['aktor']) ?></label>
           </form>
           <?php endforeach; ?>
         <?php endif; ?></b></div>
@@ -231,6 +229,25 @@ if (isset($errors['_csrf'])): ?><div class="alert err"><?= e($errors['_csrf']) ?
       o.value = s; o.textContent = s;
       if (s === cur) o.selected = true;
       sub.appendChild(o);
+    });
+  });
+  // Toggle ceklis disposisi via fetch (tanpa reload); gagal -> kembalikan posisi.
+  document.querySelectorAll('form[action*="/disposisi/"]').forEach(function (f) {
+    if (!/\/toggle$/.test(f.action)) return;
+    f.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var box = f.querySelector('input[type=checkbox]');
+      var prev = box.checked;
+      box.disabled = true;
+      fetch(f.action, {method: 'POST', body: new FormData(f),
+        headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}})
+        .then(function (r) { return r.json().then(function (j) { return {ok: r.ok, j: j}; }); })
+        .then(function (x) {
+          box.checked = (x.ok && x.j.ok) ? x.j.selesai === 1 : !prev;
+          if (!x.ok || !x.j.ok) alert('Gagal memperbarui status.');
+        })
+        .catch(function () { box.checked = !prev; alert('Gagal memperbarui status.'); })
+        .finally(function () { box.disabled = false; });
     });
   });
 })();

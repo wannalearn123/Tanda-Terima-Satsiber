@@ -25,10 +25,10 @@ final class PengirimanController
         return ['row' => $row];
     }
 
-    /** Stream PDF ke browser. Melempar RuntimeException bila gagal (data DB tetap aman). */
+    /** Stream PDF ke browser. */
     public static function pdf(PDO $pdo, int $id): void
     {
-        $bin = PdfService::generate($pdo, $id); // di luar transaksi DB
+        $bin = PdfService::generate($pdo, $id);
         $len = strlen($bin);
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="tanda-terima-' . $id . '.pdf"');

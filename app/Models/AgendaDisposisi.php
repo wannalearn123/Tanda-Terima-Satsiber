@@ -6,19 +6,9 @@ namespace App\Models;
 
 use PDO;
 
-/** Riwayat disposisi: satu surat agenda -> banyak entry kronologis (append-only). */
+/** Disposisi: satu surat -> banyak entry kronologis (append-only). */
 final class AgendaDisposisi
 {
-    /** @return array<int, array> urut kronologis (tertua dulu) */
-    public static function forAgenda(PDO $pdo, int $agendaId): array
-    {
-        $st = $pdo->prepare(
-            'SELECT * FROM agenda_disposisi WHERE agenda_id = :id ORDER BY id ASC'
-        );
-        $st->execute([':id' => $agendaId]);
-        return $st->fetchAll();
-    }
-
     public static function find(PDO $pdo, int $id): ?array
     {
         $st = $pdo->prepare('SELECT * FROM agenda_disposisi WHERE id = :id LIMIT 1');
@@ -27,7 +17,7 @@ final class AgendaDisposisi
         return $row === false ? null : $row;
     }
 
-    /** Entry riwayat baru (append-only). */
+    /** Entry baru (append-only). */
     public static function create(PDO $pdo, int $agendaId, array $d): int
     {
         $st = $pdo->prepare(
@@ -70,7 +60,7 @@ final class AgendaDisposisi
 
     /**
      * Ringkasan untuk banyak surat sekaligus (hindari N+1):
-     * [agenda_id => ['latest' => row, 'count' => n, 'actors' => [nama], 'entries' => [row kronologis]]].
+     * [agenda_id => [entry kronologis]].
      */
     public static function summaryForMany(PDO $pdo, array $ids): array
     {
@@ -85,14 +75,7 @@ final class AgendaDisposisi
         $st->execute($ids);
         $out = [];
         foreach ($st->fetchAll() as $r) {
-            $aid = (int) $r['agenda_id'];
-            if (!isset($out[$aid])) {
-                $out[$aid] = ['latest' => $r, 'count' => 0, 'actors' => [], 'entries' => []];
-            }
-            $out[$aid]['latest'] = $r;
-            $out[$aid]['count']++;
-            $out[$aid]['actors'][] = (string) ($r['aktor'] ?? '');
-            $out[$aid]['entries'][] = $r;
+            $out[(int) $r['agenda_id']][] = $r;
         }
         return $out;
     }

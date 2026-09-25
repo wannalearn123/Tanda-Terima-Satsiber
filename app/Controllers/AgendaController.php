@@ -13,15 +13,16 @@ use PDO;
 final class AgendaController
 {
     /**
-     * Data satu halaman Agenda: form (tambah/edit) + tabel kanan.
-     * Query: arah=masuk|keluar, sub=filter sub-jenis, q=cari, page, edit=id opsional.
+     * Data satu halaman Agenda: form (tambah/edit) + tabel.
+     * Query: arah, sub, q, page, edit=id opsional.
      */
     public static function index(PDO $pdo, array $query, array $old = [], array $errors = []): array
     {
         $arah = Agenda::normalizeArah($query['arah'] ?? 'masuk');
-        $subList = Agenda::subJenisFor($pdo, $arah);
-        $subMasuk = Agenda::subJenisFor($pdo, Agenda::ARAH_MASUK);
-        $subKeluar = Agenda::subJenisFor($pdo, Agenda::ARAH_KELUAR);
+        $master = Agenda::masterJenis($pdo);
+        $subMasuk = Agenda::subNames($master, Agenda::ARAH_MASUK);
+        $subKeluar = Agenda::subNames($master, Agenda::ARAH_KELUAR);
+        $subList = $arah === Agenda::ARAH_KELUAR ? $subKeluar : $subMasuk;
 
         $sub = trim((string) ($query['sub'] ?? ''));
         if ($sub !== '' && !in_array($sub, $subList, true)) {
@@ -31,12 +32,12 @@ final class AgendaController
         $rawPage = (string) ($query['page'] ?? '1');
         $page = ctype_digit($rawPage) ? (int) $rawPage : 1;
 
-        $list = Agenda::paginate($pdo, $arah, $sub === '' ? null : $sub, $q === '' ? null : $q, $page, Config::perPage());
+        $kodeMap = Agenda::kodeMapFrom($master);
+        $list = Agenda::paginate($pdo, $arah, $sub === '' ? null : $sub, $q === '' ? null : $q, $page, Config::perPage(), $kodeMap);
 
         $isEdit = false;
         $editId = null;
-        $editNoAgenda = null;
-        $riwayat = [];
+        $editRow = null;
         $dispErrors = [];
         $dispOld = [];
         $form = $old;
@@ -45,10 +46,9 @@ final class AgendaController
             if ($row !== null) {
                 $isEdit = true;
                 $editId = (int) $row['id'];
-                $editNoAgenda = (int) $row['no_agenda'];
+                $editRow = $row;
                 $arah = Agenda::normalizeArah($row['arah']);
-                $subList = Agenda::subJenisFor($pdo, $arah);
-                $riwayat = AgendaDisposisi::forAgenda($pdo, $editId);
+                $subList = $arah === Agenda::ARAH_KELUAR ? $subKeluar : $subMasuk;
                 $form = [
                     'arah' => $row['arah'],
                     'sub_jenis' => $row['sub_jenis'],
@@ -61,11 +61,7 @@ final class AgendaController
         } elseif (isset($old['__edit_id'])) {
             $isEdit = true;
             $editId = (int) $old['__edit_id'];
-            $found = Agenda::find($pdo, $editId);
-            $editNoAgenda = $found !== null ? (int) $found['no_agenda'] : null;
-            if ($found !== null) {
-                $riwayat = AgendaDisposisi::forAgenda($pdo, $editId);
-            }
+            $editRow = Agenda::find($pdo, $editId);
             $dispOld = $old['__disp_old'] ?? [];
             $dispErrors = $old['__disp_errors'] ?? [];
             unset($form['__edit_id'], $form['__disp_old'], $form['__disp_errors']);
@@ -80,7 +76,6 @@ final class AgendaController
         $formArah = Agenda::normalizeArah($form['arah'] ?? $arah);
         $formSubList = $formArah === Agenda::ARAH_KELUAR ? $subKeluar : $subMasuk;
 
-        $kodeMap = Agenda::kodeMap($pdo);
         $fmtNo = static function (array $r) use ($kodeMap): string {
             $a = Agenda::normalizeArah($r['arah'] ?? 'masuk');
             $s = (string) ($r['sub_jenis'] ?? '');
@@ -88,13 +83,7 @@ final class AgendaController
             return Agenda::formatNo($kode, (int) ($r['no_agenda'] ?? 0));
         };
 
-        $editNoFmt = null;
-        if ($isEdit && $editId !== null) {
-            $found = Agenda::find($pdo, $editId);
-            if ($found !== null) {
-                $editNoFmt = $fmtNo($found);
-            }
-        }
+        $editNoFmt = $editRow !== null ? $fmtNo($editRow) : null;
 
         $summaries = AgendaDisposisi::summaryForMany($pdo, array_column($list['rows'], 'id'));
 
@@ -115,13 +104,10 @@ final class AgendaController
             'errors' => $errors,
             'isEdit' => $isEdit,
             'editId' => $editId,
-            'editNoAgenda' => $editNoAgenda,
             'editNoFmt' => $editNoFmt,
-            'riwayat' => $riwayat,
             'dispErrors' => $dispErrors,
             'dispOld' => $dispOld,
             'summaries' => $summaries,
-            'kodeMap' => $kodeMap,
             'fmtNo' => $fmtNo,
         ];
     }
@@ -172,7 +158,7 @@ final class AgendaController
     }
 
     /**
-     * Tambah satu entry riwayat disposisi.
+     * Tambah satu entry disposisi.
      * @return array{agenda_id: int, arah: string}|array{errors: array, old: array}
      */
     public static function tambahDisposisi(PDO $pdo, int $agendaId, array $input): array
@@ -186,8 +172,7 @@ final class AgendaController
         if ($surat === null) {
             throw new \RuntimeException('Data tidak ditemukan.');
         }
-        // Tambah-box hanya mengirim aktor: lengkapi field surat dari DB
-        // agar form utama tetap terisi bila validasi disposisi gagal.
+        // Tambah-box hanya mengirim aktor: lengkapi field surat dari DB bila validasi gagal.
         foreach (['arah', 'sub_jenis', 'no_surat', 'tanggal', 'kepada', 'perihal'] as $k) {
             if (!isset($input[$k])) {
                 $input[$k] = $surat[$k];
@@ -212,7 +197,10 @@ final class AgendaController
         }
     }
 
-    /** Balik ceklis entry terakhir surat. Kembalikan agenda pemilik untuk redirect. */
+    /**
+     * Balik ceklis satu entry. Kembalikan agenda pemilik untuk redirect.
+     * @return array{agenda_id: int, arah: string, selesai: int}
+     */
     public static function toggleDisposisi(PDO $pdo, int $dispId, ?string $csrf): array
     {
         if (!csrf_verify($csrf)) {
@@ -223,6 +211,6 @@ final class AgendaController
         if ($surat === null) {
             throw new \RuntimeException('Data tidak ditemukan.');
         }
-        return ['agenda_id' => (int) $row['agenda_id'], 'arah' => Agenda::normalizeArah($surat['arah'])];
+        return ['agenda_id' => (int) $row['agenda_id'], 'arah' => Agenda::normalizeArah($surat['arah']), 'selesai' => (int) $row['selesai']];
     }
 }

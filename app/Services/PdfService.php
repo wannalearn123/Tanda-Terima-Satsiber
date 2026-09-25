@@ -50,10 +50,7 @@ final class PdfService
             . '</body></html>';
     }
 
-    /**
-     * Generate PDF binary untuk satu record. Dipanggil SETELAH commit DB,
-     * tidak pernah di dalam transaksi database.
-     */
+    /** Generate PDF binary untuk satu record. */
     public static function generate(PDO $pdo, int $id): string
     {
         $row = Pengiriman::find($pdo, $id);
@@ -63,8 +60,7 @@ final class PdfService
         if (!class_exists(\Dompdf\Dompdf::class)) {
             throw new \RuntimeException('Dependensi PDF belum tersedia (folder vendor/ belum terinstal).');
         }
-        // Hardening Dompdf: tanpa remote/PHP/JS, filesystem dibatasi chroot
-        // project-root (masih mencakup font internal vendor/), temp terisolasi.
+        // Hardening Dompdf: tanpa remote/PHP/JS, chroot project-root, temp terisolasi.
         $options = new \Dompdf\Options([
             'isRemoteEnabled' => false,
             'isPhpEnabled' => false,

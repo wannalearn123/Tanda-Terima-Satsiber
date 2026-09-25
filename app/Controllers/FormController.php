@@ -24,13 +24,13 @@ final class FormController
         if (!csrf_verify($input['_csrf'] ?? null)) {
             return ['errors' => ['_csrf' => 'Sesi kedaluwarsa. Muat ulang form.'], 'old' => $input];
         }
-        [$errors, $clean] = Validator::pengiriman($input, $pdo);
+        [$errors, $clean] = Validator::pengiriman($input);
         if ($errors !== []) {
             return ['errors' => $errors, 'old' => $input];
         }
         $newPath = null;
         try {
-            // File ditulis dulu; bila DB gagal, file dibersihkan. Tidak ada orphan.
+            // File ditulis dulu; bila DB gagal, file dibersihkan.
             if ($clean['tanda_tangan_bin'] !== null) {
                 $newPath = TandaTangan::save($clean['tanda_tangan_bin']);
             }
@@ -53,7 +53,7 @@ final class FormController
         }
         $old = Pengiriman::find($pdo, $id);
         $oldPath = $old['tanda_tangan_path'] ?? null;
-        [$errors, $clean] = Validator::pengiriman($input, $pdo, $oldPath);
+        [$errors, $clean] = Validator::pengiriman($input, $oldPath);
         if ($errors !== []) {
             return ['errors' => $errors, 'old' => $input];
         }
@@ -68,7 +68,7 @@ final class FormController
             $clean['tanda_tangan_path'] = $newPath;
             Pengiriman::update($pdo, $id, $clean);
             if ($replaced) {
-                TandaTangan::delete($oldPath); // hapus lama hanya bila DB sukses
+                TandaTangan::delete($oldPath);
             }
             return ['id' => $id];
         } catch (\Throwable $e) {

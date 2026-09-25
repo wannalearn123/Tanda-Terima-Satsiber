@@ -2,11 +2,8 @@
 
 declare(strict_types=1);
 
-// Router untuk PHP built-in server. Jalankan dari root proyek:
-//   php -S 0.0.0.0:8090 public/router.php
-// Hanya file statis allowlist di /assets/ yang dilayani langsung; selain itu
-// ke front-controller. Ini mencegah source disclosure (router.php/index.php)
-// dan path traversal via encoding.
+// Router untuk PHP built-in server: php -S 0.0.0.0:8090 public/router.php
+// Hanya /assets/ allowlist yang dilayani langsung; selain itu ke front-controller.
 
 $rawPath = (string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $path = rawurldecode($rawPath);
@@ -34,7 +31,7 @@ if ($path !== '/' && str_starts_with($path, '/assets/') && !str_contains($path, 
         readfile($file);
         exit;
     }
-    // Path di bawah /assets/ tapi tidak valid → 404, jangan jatuh ke aplikasi.
+    // Path /assets/ tidak valid → 404.
     http_response_code(404);
     exit;
 }

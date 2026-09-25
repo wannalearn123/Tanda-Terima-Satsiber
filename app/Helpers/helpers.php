@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 // Helper global: escape, session, CSRF, flash, redirect, logging.
-
 function e(mixed $v): string
 {
     return htmlspecialchars((string) ($v ?? ''), ENT_QUOTES, 'UTF-8');
@@ -14,8 +13,7 @@ function ensure_session(): void
     if (session_status() === PHP_SESSION_ACTIVE) {
         return;
     }
-    // Hardening cookie sesi: HttpOnly selalu, Secure bila HTTPS, SameSite=Lax
-    // untuk mitigasi XSS-cookie-theft dan CSRF. Harus sebelum session_start().
+    // Cookie sesi: HttpOnly, Secure bila HTTPS, SameSite=Lax. Sebelum session_start().
     ini_set('session.use_strict_mode', '1');
     ini_set('session.use_only_cookies', '1');
     ini_set('session.use_trans_sid', '0');
@@ -44,7 +42,7 @@ function session_touch_idle(): void
     $_SESSION['last_activity'] = time();
 }
 
-/** True bila sesi login melewati batas idle dan harus diakhiri. */
+/** True bila sesi login melewati batas idle. */
 function session_idle_expired(int $maxIdle = SESSION_MAX_IDLE): bool
 {
     ensure_session();
@@ -108,9 +106,4 @@ function app_log(string $message): void
         mkdir($dir, 0755, true);
     }
     error_log('[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL, 3, $dir . '/app.log');
-}
-
-function now_ts(): string
-{
-    return date('Y-m-d H:i:s');
 }

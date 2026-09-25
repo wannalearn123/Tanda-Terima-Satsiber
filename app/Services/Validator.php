@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Agenda;
 use PDO;
 
 final class Validator
 {
-    /**
-     * @return array{0: array<string,string>, 1: array<string,mixed>}
-     * @return [errors, clean]
-     */
-    public static function pengiriman(array $input, PDO $pdo, ?string $existingTtd = null): array
+    /** @return array{0: array<string,string>, 1: array<string,mixed>} [errors, clean] */
+    public static function pengiriman(array $input, ?string $existingTtd = null): array
     {
         $errors = [];
         $s = fn(string $k): string => trim((string) ($input[$k] ?? ''));
@@ -118,11 +116,9 @@ final class Validator
     }
 
     /**
-     * Validasi + standardisasi Agenda sebelum masuk DB.
-     * No. Agenda TIDAK diinput user: otomatis MAX+1 per grup (arah + sub_jenis)
-     * saat create, dikunci saat update. Arah dan sub_jenis juga dikunci saat
-     * update (surat yang sudah masuk tidak bisa ganti jenis).
-     * Aturan case: arah lower, no_surat UPPER, kepada/aktor Title Case,
+     * Validasi + standardisasi Agenda. No. Agenda otomatis MAX+1 per grup
+     * (arah + sub_jenis) saat create, dikunci saat update.
+     * Case: arah lower, no_surat UPPER, kepada/aktor Title Case,
      * perihal trim+collapse (huruf pertama kapital).
      *
      * @return array{0: array<string,string>, 1: array<string,mixed>}
@@ -140,7 +136,7 @@ final class Validator
             $errors['sub_jenis'] = 'Sub-jenis wajib dipilih.';
         } else {
             if ($excludeId !== null) {
-                $existing = \App\Models\Agenda::find($pdo, $excludeId);
+                $existing = Agenda::find($pdo, $excludeId);
                 if ($existing !== null
                     && ((string) ($existing['arah'] ?? '') !== $arah
                         || (string) ($existing['sub_jenis'] ?? '') !== $sub)) {
@@ -148,7 +144,7 @@ final class Validator
                     $arah = (string) ($existing['arah'] ?? $arah);
                     $sub = (string) ($existing['sub_jenis'] ?? $sub);
                 }
-            } elseif (!\App\Models\Agenda::isValidSubJenis($pdo, $arah, $sub)) {
+            } elseif (!Agenda::isValidSubJenis($pdo, $arah, $sub)) {
                 $errors['sub_jenis'] = 'Sub-jenis tidak valid untuk surat ' . $arah . '.';
             }
         }

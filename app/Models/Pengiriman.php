@@ -10,7 +10,6 @@ final class Pengiriman
 {
     public static function create(PDO $pdo, array $d): int
     {
-        // Transaksi pendek: hanya INSERT satu record.
         $pdo->beginTransaction();
         try {
             $st = $pdo->prepare(
@@ -43,7 +42,7 @@ final class Pengiriman
         }
     }
 
-    public static function update(PDO $pdo, int $id, array $d): bool
+    public static function update(PDO $pdo, int $id, array $d): void
     {
         $pdo->beginTransaction();
         try {
@@ -68,7 +67,6 @@ final class Pengiriman
                 ':id' => $id,
             ]);
             $pdo->commit();
-            return $st->rowCount() >= 0;
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -79,17 +77,13 @@ final class Pengiriman
 
     public static function find(PDO $pdo, int $id): ?array
     {
-        $st = $pdo->prepare(
-            "SELECT p.*
-             FROM pengiriman p
-             WHERE p.id = :id LIMIT 1"
-        );
+        $st = $pdo->prepare('SELECT * FROM pengiriman WHERE id = :id LIMIT 1');
         $st->execute([':id' => $id]);
         $row = $st->fetch();
         return $row === false ? null : $row;
     }
 
-    /** Hapus record. Kembalikan path tanda tangan lama (untuk bersih-bersih file) atau null bila tak ada. */
+    /** Hapus record. Kembalikan path tanda tangan lama (untuk bersih-bersih file) atau null. */
     public static function destroy(PDO $pdo, int $id): ?string
     {
         $row = self::find($pdo, $id);
@@ -111,26 +105,26 @@ final class Pengiriman
         }
     }
 
-    /** Filter dashboard: rentang tanggal + search sederhana. Selalu pakai LIMIT/OFFSET. */
+    /** Filter dashboard: rentang tanggal + search. Selalu pakai LIMIT/OFFSET. */
     public static function paginate(PDO $pdo, ?string $from, ?string $to, ?string $q, int $page, int $perPage): array
     {
         $where = [];
         $params = [];
         if ($from !== null && $from !== '') {
-            $where[] = 'p.tanggal >= :from';
+            $where[] = 'tanggal >= :from';
             $params[':from'] = $from;
         }
         if ($to !== null && $to !== '') {
-            $where[] = 'p.tanggal <= :to';
+            $where[] = 'tanggal <= :to';
             $params[':to'] = $to;
         }
         if ($q !== null && $q !== '') {
-            $where[] = '(p.nomor_referensi LIKE :q OR p.nama_penerima LIKE :q)';
+            $where[] = '(nomor_referensi LIKE :q OR nama_penerima LIKE :q)';
             $params[':q'] = '%' . $q . '%';
         }
         $w = $where === [] ? '' : 'WHERE ' . implode(' AND ', $where);
 
-        $cs = $pdo->prepare("SELECT COUNT(*) AS c FROM pengiriman p $w");
+        $cs = $pdo->prepare("SELECT COUNT(*) AS c FROM pengiriman $w");
         $cs->execute($params);
         $total = (int) ($cs->fetch()['c'] ?? 0);
 
@@ -139,9 +133,8 @@ final class Pengiriman
         $offset = ($page - 1) * $perPage;
 
         $st = $pdo->prepare(
-            "SELECT p.*
-             FROM pengiriman p
-             $w ORDER BY p.tanggal DESC, p.id DESC LIMIT :lim OFFSET :off"
+            "SELECT * FROM pengiriman
+             $w ORDER BY tanggal DESC, id DESC LIMIT :lim OFFSET :off"
         );
         foreach ($params as $k => $v) {
             $st->bindValue($k, $v);

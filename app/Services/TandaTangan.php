@@ -6,8 +6,7 @@ namespace App\Services;
 
 use App\Config\Config;
 
-// Penyimpanan file tanda tangan (PNG). Tidak pernah sebagai BLOB database.
-// Path yang disimpan di DB relatif terhadap storage/, contoh: tandatangan/ttd_....png
+// Penyimpanan file tanda tangan (PNG); path relatif storage/ di DB.
 
 final class TandaTangan
 {
@@ -20,7 +19,7 @@ final class TandaTangan
         return $d;
     }
 
-    /** Simpan binary PNG, kembalikan path relatif. Null bila tidak ada gambar. */
+    /** Simpan binary PNG, kembalikan path relatif (null bila tidak ada gambar). */
     public static function save(?string $bin): ?string
     {
         if ($bin === null) {
@@ -34,7 +33,7 @@ final class TandaTangan
         return 'tandatangan/' . $name;
     }
 
-    /** Hapus file lama secara aman (guard direktori + ekstensi). */
+    /** Hapus file lama secara aman. */
     public static function delete(?string $rel): void
     {
         if ($rel === null || $rel === '') {
@@ -49,7 +48,7 @@ final class TandaTangan
         }
     }
 
-    /** Untuk embed <img> di PDF (Dompdf remote dimatikan, jadi pakai data-URI). */
+    /** Untuk embed <img> di PDF (pakai data-URI). */
     public static function dataUri(?string $rel): ?string
     {
         if ($rel === null || $rel === '') {

@@ -46,8 +46,6 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .btn.sm{padding:7px 12px;font-size:14px}
 .btn.danger{background:#5a2020;border-color:var(--err)}
 .btn.danger:hover{background:#7a2b2b}
-.navlink.danger{background:#5a2020;border-color:var(--err)}
-.navlink.danger:hover{background:#7a2b2b}
 .inline{display:inline}
 .inline.grow{flex:1}
 .card.narrow{max-width:400px;width:100%}
@@ -63,10 +61,6 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .tbl th{background:#212d40}
 .actions-cell{white-space:nowrap}
 .agenda-grid > *{min-width:0}
-.mrow b.leader{display:flex;align-items:center;gap:6px;flex:1;min-width:0;max-width:100%}
-.mrow b.leader .ll{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mrow b.leader .fill{flex:1;min-width:0;border-bottom:1px solid var(--muted)}
-.mrow b.leader .rl{white-space:nowrap}
 .mcard{display:none}
 .detail>div{display:grid;grid-template-columns:200px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .detail dt{color:var(--muted)} .detail dd{margin:0}
@@ -77,7 +71,6 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .wrap.wide{max-width:1280px}
 .wrap.agenda-flex{width:fit-content;max-width:none;margin:0 auto;padding:0 16px}
 .agenda-grid{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
-.agenda-form .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .sub-nav{display:flex;justify-content:center;gap:8px;padding:8px 16px;background:transparent}
 .sub-nav .nav-scroll{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:thin;-webkit-overflow-scrolling:touch;white-space:nowrap}
 .sub-nav a,.sub-nav .navlink{padding:8px 14px;font-size:15px}
@@ -88,18 +81,13 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-colo
 .check input{width:auto}
 .agenda-list{min-width:0}
 .agenda-list .tbl{width:auto;min-width:0;font-size:14px}
-.agenda-list .tbl th,.agenda-list .tbl td{text-align:center;vertical-align:middle}
+.agenda-list .tbl th,.agenda-list .tbl td{text-align:center;vertical-align:middle;white-space:nowrap}
+.agenda-list .tbl td.perihal{white-space:normal;max-width:280px}
 .agenda-list .tbl td.disp form{display:block;margin:0}
 .agenda-list .tbl td.disp form+form{margin-top:4px}
 .actions-cell form.inline{display:inline-block;margin:0;vertical-align:middle}
 .mcard b form{display:block;margin:0}
 .mcard b form+form{margin-top:4px}
-.agenda-list .tbl th,.agenda-list .tbl td{white-space:nowrap}
-.agenda-list .tbl td.perihal{white-space:normal;max-width:280px}
-.agenda-form .mrow{display:flex;justify-content:space-between;align-items:center;gap:80px;padding:6px 0;border-bottom:1px solid var(--line)}
-.agenda-form .mrow span{color:var(--muted);font-size:13px;white-space:nowrap}
-.agenda-form .mrow b{font-size:14px;text-align:right}
-.agenda-form .mrow .check{white-space:nowrap}
 .btn.icon{padding:7px 10px;text-align:center;line-height:1}
 .btn.icon svg{display:inline-block;width:16px;height:16px;vertical-align:middle;fill:currentColor}
 @media(max-width:1024px){
